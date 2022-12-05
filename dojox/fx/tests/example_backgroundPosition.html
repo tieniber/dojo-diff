@@ -4,7 +4,7 @@
 <head>
 	<title>Animated background position example | The Dojo Toolkit</title>
 		
-	<script type="text/javascript" src="../../../dojo/dojo.js" djConfig="isDebug:true, parseOnLoad: true" ></script>
+	<script type="text/javascript" src="../../../dojo/dojo.js" data-dojo-config="isDebug:true, parseOnLoad: true" ></script>
 	<style type="text/css">
 		@import "../../../dojo/resources/dojo.css";
 		@import "../../../dijit/themes/dijit.css";
@@ -28,7 +28,7 @@
 			anim = new dojo.Animation({
 				curve: new dojo._Line(0,-500),
 				duration: 3000,
-				onEnd: (function(){ anim.play(); }), // loop indefinately
+				onEnd: (function(){ anim.play(); }), // loop indefinitely
 				onAnimate: function(){
 					var str = Math.floor(parseInt(arguments[0]))+"px 0px";
 					dojo.style(node,"backgroundPosition",str);

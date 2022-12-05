@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 
 <!--
-	Copyright (c) 2004-2011 The Dojo Foundation, Licensed under the Academic
+	Copyright (c) 2004-2016 The JS Foundation, Licensed under the Academic
 	Free License version 2.1 or BSD licenses
 -->
 <project name="dojo" default="cldr" basedir=".">
@@ -15,7 +15,7 @@
 	<property name="json" location="${root}/dojo/cldr/nls"/>
 
 	<!-- Arbitrary defaults. locales and currencies properties can be altered or eliminated to build the entire set -->
-	<property name="locales" value="ar,ca,cs,da,de-de,el,en-au,en-ca,en-gb,en-us,es-es,fi,fr-ch,fr-fr,he-il,hu,it-it,ja-jp,ko-kr,nb,nl,pl,pt-br,pt-pt,ro,ru,sk,sl,sv,th,tr,zh,zh-cn,zh-hant,zh-hans,zh-hk,zh-tw" />
+	<property name="locales" value="al,ar,bs,ca,cs,da,de-de,el,en-au,en-ca,en-gb,en-us,es-es,fi,fr-ch,fr-fr,he-il,hr,hu,id,it-it,ja-jp,ko-kr,mk,nb,nl,pl,pt-br,pt-pt,ro,ru,sk,sl,sr,sv,th,tr,zh,zh-cn,zh-hant,zh-hans,zh-hk,zh-tw" />
 	<property name="currencies" value="GBP,USD,CAD,AUD,EUR,CHF,HKD,JPY,CNY" />
 
 	<target name="-check-config"
@@ -111,8 +111,9 @@
 			delTask.perform();
 		}
 
+	importClass(java.io.File);
 	var fs = project.createDataType("fileset");
-	var dir = new java.io.File(attributes.get("dir"));
+	var dir = new File(attributes.get("dir"));
 	fs.setDir(dir);
 	fs.setIncludes("*.js");
 	ds = fs.getDirectoryScanner(project);
@@ -122,7 +123,7 @@
 	load.setEncoding("UTF8");
 
 	for (var i=0; i<jsFiles.length; i++) {
-		var srcFile = java.io.File(dir, jsFiles[i]);
+		var srcFile = new File(dir, jsFiles[i]);
 		load.setSrcFile(srcFile);
 		//FIXME: spawn task as separate ant process to avoid stale properties, collisions?
 		var uniqueId = "removeEmptyOutput.json."+dir+"."+i;
@@ -176,6 +177,9 @@ java.lang.System.out.print(contents);
 			<attribute name="destdir"/>
 			<sequential>
 				<xslt includes="@{in}" style="@{style}" destdir="@{destdir}" basedir="@{basedir}" extension=".tmp">
+					<classpath>
+						<pathelement path="${java.class.path}"/>
+					</classpath>
 					<factory name="net.sf.saxon.TransformerFactoryImpl" />
 					<xmlcatalog>
 						<catalogpath path="ldml/catalog" />
@@ -193,9 +197,9 @@ java.lang.System.out.print(contents);
 			<attribute name="destdir"/>
 			<element name="fileset" type="fileset"/>
 			<![CDATA[
+	importClass(java.io.File);
 	var fs = elements.get("fileset").get(0);
 	var basedir = fs.getDir(project);
-
 	var filter = project.getProperty("locales");
 	if(filter){
 		filter = String(filter).replace(/-/g,'_').split(",");
@@ -234,10 +238,10 @@ java.lang.System.out.print(contents);
 	for (i=0; i<srcFiles.length; i++) {
 		var filename = srcFiles[i];
 		var locale = filename.substring(0, filename.indexOf(".")).replace("_","-").toLowerCase();
-		var outdir = new java.io.File(locale == "root" ? destdir : destdir+"/"+locale);
+		var outdir = new File(locale == "root" ? destdir : destdir+"/"+locale);
 
 		var ldml = project.createTask("processLdml");
-		ldml.setDynamicAttribute("in", new java.io.File(filename));
+		ldml.setDynamicAttribute("in", new File(filename));
 		ldml.setDynamicAttribute("destdir", outdir);
 		ldml.setDynamicAttribute("basedir", basedir);
 		ldml.perform();

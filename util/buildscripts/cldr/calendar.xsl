@@ -49,8 +49,8 @@
                         <xsl:for-each select="calendars">
                             <xsl:call-template name="top"></xsl:call-template>
                         </xsl:for-each>
-                    </xsl:if>                 
-                </xsl:otherwise>
+                    </xsl:if>
+				</xsl:otherwise>
             </xsl:choose>
          </xsl:otherwise>
     </xsl:choose>        
@@ -82,12 +82,19 @@
         </xsl:when>
         <xsl:otherwise>
             <xsl:apply-templates/>
-        </xsl:otherwise>
+
+			<!-- <fields> used to be under <calendar> but now it's a sibling of <calendars> -->
+			<xsl:for-each select="../../fields">
+				<xsl:call-template name="fields">
+					<xsl:with-param name="width" select="@type"></xsl:with-param>
+				</xsl:call-template>
+			</xsl:for-each>
+		</xsl:otherwise>
     </xsl:choose>
 </xsl:template>
 
 <!-- process months | days | quarters | dayPeriods -->
-    <xsl:template name="months_days_quarters_dayPeriods" match="months | days | quarters | dayPeriods">
+<xsl:template name="months_days_quarters_dayPeriods" match="months | days | quarters | dayPeriods">
     <xsl:param name="name" select="name()"/>
     <xsl:param name="width" select="@type"/>
     <xsl:param name="ctx" select="../@type"/>
@@ -207,26 +214,26 @@
     </xsl:choose>
 </xsl:template>
   
-    <!-- template for inserting 'locale' alias information, 
-           e.g. for     <calendar type="buddhist">
-                                <months>
-                                    <alias source="locale" path="../../calendar[@type='gregorian']/months"/>
-                                </months>
-                                      ......
-         alias info will be recorded as 'months@localeAlias' : {'target':"months", 'bundle' : 'gregorian'}    -->
-    <xsl:template name="insert_alias_info">
-        <!-- alias source node name-->
-        <xsl:param name="sourceName" select="name()"></xsl:param>
-        <!-- alias target node name, same as source node by default-->
-        <xsl:param name="targetName" select="$sourceName"></xsl:param>
-        <!-- alias target bundle-->
-        <xsl:param name="bundle" select="../@type"></xsl:param>
-        <xsl:call-template name="insert_comma"/>
-	'<xsl:value-of select="$sourceName"/><xsl:text>@localeAlias</xsl:text>
-		<xsl:value-of select="$index"/><saxon:assign name="index" select="sum($index + 1)"/>
-		<xsl:text>':{'target':"</xsl:text><xsl:value-of select="$targetName"/><xsl:text>", 'bundle':"</xsl:text>
-        <xsl:value-of select="$bundle"/><xsl:text>"}</xsl:text>
-    </xsl:template>
+<!-- template for inserting 'locale' alias information,
+	   e.g. for     <calendar type="buddhist">
+							<months>
+								<alias source="locale" path="../../calendar[@type='gregorian']/months"/>
+							</months>
+								  ......
+	 alias info will be recorded as 'months@localeAlias' : {'target':"months", 'bundle' : 'gregorian'}    -->
+<xsl:template name="insert_alias_info">
+	<!-- alias source node name-->
+	<xsl:param name="sourceName" select="name()"></xsl:param>
+	<!-- alias target node name, same as source node by default-->
+	<xsl:param name="targetName" select="$sourceName"></xsl:param>
+	<!-- alias target bundle-->
+	<xsl:param name="bundle" select="../@type"></xsl:param>
+	<xsl:call-template name="insert_comma"/>
+'<xsl:value-of select="$sourceName"/><xsl:text>@localeAlias</xsl:text>
+	<xsl:value-of select="$index"/><saxon:assign name="index" select="sum($index + 1)"/>
+	<xsl:text>':{'target':"</xsl:text><xsl:value-of select="$targetName"/><xsl:text>", 'bundle':"</xsl:text>
+	<xsl:value-of select="$bundle"/><xsl:text>"}</xsl:text>
+</xsl:template>
     
 	
 <!--process am & noon & pm for <dayPeriod> -->
@@ -553,10 +560,12 @@
 <!-- Sub output routine-->
 <xsl:template name="subSelect">
     <xsl:param name="name"></xsl:param>
-    <xsl:variable name="num" select="count(./$name[not(@draft)])+count(./$name[@draft!='provisional' and @draft!='unconfirmed'])"></xsl:variable>
+    <!-- CLDR 25 introduce alternate for era, we don't want to select them as dojo does not know
+    how to handle them as-is -->
+    <xsl:variable name="num" select="count(./$name[not(@draft) and not(@alt)])+count(./$name[@draft!='provisional' and @draft!='unconfirmed'])"></xsl:variable>
     <xsl:if test="$num>1">
         <xsl:text>[</xsl:text>
-        <xsl:for-each select="$name[not(@draft)] | $name[@draft!='provisional' and @draft!='unconfirmed']">
+        <xsl:for-each select="$name[not(@draft) and not (@alt)] | $name[@draft!='provisional' and @draft!='unconfirmed']">
             <xsl:text>"</xsl:text>
             <xsl:value-of select="replace(.,'&quot;', '\\&quot;')"/>
             <xsl:text>"</xsl:text>
@@ -586,11 +595,13 @@
     
 <xsl:template name="subSelect_in_place">
     <xsl:param name="name"></xsl:param>
+    <!-- CLDR 25 introduce alternate for era, we don't want to select them as dojo does not know
+how to handle them as-is -->
     <!--xsl:variable name="num" select="count(./$name[not(@draft)])+count(./$name[@draft!='provisional' and @draft!='unconfirmed'])"></xsl:variable-->
-    <xsl:variable name="num" select="count(./*[name()=$name and (not(@draft) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)])"></xsl:variable>
+    <xsl:variable name="num" select="count(./*[name()=$name and ((not(@draft) and not(@alt)) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)])"></xsl:variable>
     <xsl:text>[</xsl:text>
     <!--xsl:for-each select="$name[not(@draft)] | $name[@draft!='provisional' and @draft!='unconfirmed']"-->
-    <xsl:for-each select="./*[name()=$name and (not(@draft) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)]">        
+    <xsl:for-each select="./*[name()=$name and ((not(@draft) and not(@alt)) or @draft!='provisional' and @draft!='unconfirmed') and not(@yeartype)]">        
         <xsl:choose>
             <xsl:when test="$name='day'">
                 <!--TODO: too bad that assign name can not be variable -->

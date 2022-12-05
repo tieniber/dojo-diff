@@ -117,7 +117,7 @@ define(["require", "dojo/has"], function(require, has){
 				// apply all transforms with a gateId <= the current gate for resource that have not yet been applied
 				var err, nextJobPos, candidate;
 				while(1){
-					nextJobPos = resource.jobPos + 1,
+					nextJobPos = resource.jobPos + 1;
 					candidate = nextJobPos<resource.job.length && resource.job[nextJobPos];
 					// candidate (if any) is a [transformProc, gateId] pair
 					if(candidate && candidate[1]<=bc.currentGate){
@@ -202,7 +202,9 @@ define(["require", "dojo/has"], function(require, has){
 			}
 			if(bc.resourcesByDest[dest]){
 				// multiple srcs scheduled to write into a single dest
-				bc.log("outputCollide", ["source-1", src, "source-2", bc.resourcesByDest[dest].src]);
+				if(src !== bc.resourcesByDest[dest].src){ // don't squawk if same file
+					bc.log("outputCollide", ["source-1", src, "source-2", bc.resourcesByDest[dest].src]);
+				}
 				return;
 			}
 			// remember the resources in the global maps
@@ -279,7 +281,7 @@ define(["require", "dojo/has"], function(require, has){
 			});
 		}
 
-		if(!bc.errorCount && bc.release){
+		if(!bc.getErrorCount() && bc.release){
 			doBuild();
 		}
 	});

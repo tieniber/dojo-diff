@@ -22,16 +22,11 @@
 			dojo.require("dijit._Container");
 			dojo.require("dijit._Contained");
 			dojo.require("dijit.layout._LayoutWidget");
-			dojo.require("dijit.focus");	// dijit.focus()
 
 			dojo.ready(function(){
 				var testW;
 
-				dojo.declare('Test1Widget',
-					[dijit._Widget, dijit._Templated],
-				{
-					widgetsInTemplate: true,
-	
+				dojo.declare('Test1Widget', [dijit._Widget, dijit._Templated], {
 					templateString: dojo.byId('Test1Template').textContent || dojo.byId('Test1Template').innerText,
 					onClick: function(e){
 						if(e.target){
@@ -46,25 +41,17 @@
 					}
 				});
 
-				dojo.declare('Test2Widget',
-					[dijit._Widget, dijit._Templated],
-				{
-					widgetsInTemplate: true,
-	
+				dojo.declare('Test2Widget', [dijit._Widget, dijit._Templated], {
 					templateString: dojo.byId('Test2Template').textContent || dojo.byId('Test2Template').innerText
 				});
 
-				dojo.declare('Test4Widget',
-					[dijit._Widget, dijit._Templated],
-				{
-					widgetsInTemplate: true,
-		
+				dojo.declare('Test4Widget', [dijit._Widget, dijit._Templated], {
 					templateString: dojo.byId('Test4Template').textContent || dojo.byId('Test4Template').innerText
 				});
 		
 				function validateTest4Widget(t, testW){
 					var selectedTab = dojo.query(".dijitTabChecked", testW.domNode)[0];
-					var selectedPane = dojo.query(".dijitTabPane.dijitVisible", testW.domNode)[0];
+					var selectedPane = dojo.query(".dijitVisible > .dijitTabPane", testW.domNode)[0];
 					var tabBox = selectedTab ? dojo.contentBox(selectedTab) : null;
 					var paneBox = selectedPane ? dojo.contentBox(selectedPane) : null;
 					t.t(tabBox && tabBox.w > 0 && tabBox.h > 0, "tabBox && tabBox.w > 0 && tabBox.h > 0");
@@ -153,11 +140,7 @@
 					}
 				});
 		
-				dojo.declare('Test5Widget',
-					[dijit._Widget, dijit._Templated],
-				{
-					widgetsInTemplate: true,
-		
+				dojo.declare('Test5Widget', [dijit._Widget, dijit._Templated], {
 					templateString: dojo.byId('Test5Template').textContent || dojo.byId('Test5Template').innerText,
 					startup: function(){
 						if(this._started){
@@ -219,8 +202,7 @@
 											'<div dojoType="dijit.form.Button" id="missingButtonId" ' +
 											'dojoAttachPoint="missingButton">Missing...</div>' +
 										'</div>' +
-									'</div>',
-					widgetsInTemplate: true
+									'</div>'
 				});
 	
 				doh.register("parse", function(){
@@ -318,9 +300,8 @@
 							// Compare programmatic and declaratively created widget with layout widgets in template
 							name: "programmatic vs declarative with layout widgets",
 							runTest: function(t){
-								// Focus the body, so that we don't have different classes on our
-								// two widgets
-								dijit.focus(dojo.body());
+								// Focus unrelated element, so that we don't have different classes on our two widgets
+								dojo.byId("plainInput").focus();
 								var declW = dijit.byId("test4Widget");
 								var progW = test4WidgetProgrammatic;
 
@@ -415,11 +396,7 @@
 		</div>
 	</xmp>
 		<script>
-			dojo.declare('Test3Widget',
-				[dijit._Widget, dijit._Templated],
-			{
-				widgetsInTemplate: true,
-
+			dojo.declare('Test3Widget', [dijit._Widget, dijit._Templated], {
 				templateString: dojo.byId('Test3Template').textContent || dojo.byId('Test3Template').innerText
 			});
 		</script>
@@ -486,6 +463,7 @@
 	<div dojoType="Test5Widget" id="test5Widget" ></div>
 
 	<div dojoType="Missing" id="missing"></div>
+	<input id="plainInput"/>
 	</body>
 </html>
 

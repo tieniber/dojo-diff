@@ -64,7 +64,7 @@ define([
 
 		cleanDeprecated = function(o, inputFile){
 			var deprecated = [];
-			for(p in o){
+			for(var p in o){
 				if(/^(log|loader|xdDojoPath|scopeDjConfig|xdScopeArgs|xdDojoScopeName|expandProvide|buildLayers|query|removeDefaultNameSpaces|addGuards)$/.test(p)){
 					deprecated.push(p);
 					bc.log("inputDeprecated", ["switch", p, inputFile]);
@@ -114,7 +114,6 @@ define([
 			}
 			(src.messages || []).forEach(function(item){bc.addMessage.apply(bc, item);});
 
-
 			// packagePaths and packages require special processing to get their contents into packageMap; do that first...
 			// process packagePaths before packages before packageMap since packagePaths is less specific than
 			// packages is less specific than packageMap. Notice that attempts to edit an already-existing package
@@ -127,7 +126,7 @@ define([
 					packageInfo.location = catPath(base, packageInfo.name);
 					mixPackage(packageInfo);
 				});
-			};
+			}
 			(src.packages || []).forEach(function(packageInfo){
 					if(isString(packageInfo)){
 						packageInfo = {name:packageInfo};
@@ -273,10 +272,10 @@ define([
 
 			// build up info to tell all about a package; all properties semantically identical to definitions used by dojo loader/bdLoad
 			pack.main = isString(pack.main) ? pack.main : "main";
-			if(pack.main.indexOf("./")==0){
+			if(pack.main.indexOf("./")===0){
 				pack.main = pack.main.substring(2);
 			}
-			if(pack.destMain && pack.destMain.indexOf("./")==0){
+			if(pack.destMain && pack.destMain.indexOf("./")===0){
 				pack.destMain = pack.destMain.substring(2);
 			}
 
@@ -336,8 +335,17 @@ define([
 		}
 
 		// get this done too...
+		require.computeAliases(bc.aliases, (bc.aliasesMap = []));
 		require.computeMapProg(bc.paths, (bc.pathsMapProg = []));
-		require.computeMapProg(bc.destPaths || bc.paths, (bc.destPathsMapProg = []));
+
+		bc.mapProgs = [];
+		require.computeMapProg(bc.map, bc.mapProgs);
+		bc.mapProgs.forEach(function(item){
+			item[1] = require.computeMapProg(item[1], []);
+			if(item[0]=="*"){
+				bc.mapProgs.star = item;
+			}
+		});
 
 		// add some methods to bc to help with resolving AMD module info
 		bc.srcModules = {};
@@ -349,7 +357,7 @@ define([
 
 		bc.getSrcModuleInfo = function(mid, referenceModule, ignoreFileType){
 			if(ignoreFileType){
-				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", {}, [], true);
+				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", bc.mapProgs, bc.pathsMapProg, bc.aliasesMap, true);
 				result.mid = trimLastChars(result.mid, 2);
 				if(result.pid!==0){
 					// trim /x.js
@@ -357,15 +365,15 @@ define([
 				}
 				return result;
 			}else{
-				return require.getModuleInfo(mid, referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", {}, [], true);
+				return require.getModuleInfo(mid, referenceModule, bc.packages, bc.srcModules, bc.basePath + "/", bc.mapProgs, bc.pathsMapProg, bc.aliasesMap, true);
 			}
 		};
 
 
 		bc.getDestModuleInfo = function(mid, referenceModule, ignoreFileType){
-			// note: bd.destPagePath should never be required; but it's included for completeness and up to the user to provide it if some transform does decide to use it
+			// notice no mapping, paths, aliases in the dest getModuleInfo....just send stuff to where it should go without manipulation
 			if(ignoreFileType){
-				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", {}, [], true);
+				var result = require.getModuleInfo(mid+"/x", referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", [], [], [], true);
 				result.mid = trimLastChars(result.mid, 2);
 				if(result.pid!==0){
 					// trim /x.js
@@ -373,9 +381,39 @@ define([
 				}
 				return result;
 			}else{
-				return require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", {}, [], true);
+				return require.getModuleInfo(mid, referenceModule, bc.destPackages, bc.destModules, bc.destBasePath + "/", [], [], [], true);
 			}
 		};
+
+		bc.getAmdModule = function(
+				mid,
+				referenceModule
+			){
+				var match = mid.match(/^([^\!]+)\!(.*)$/);
+				if(match){
+					var pluginModuleInfo = bc.getSrcModuleInfo(match[1], referenceModule),
+						pluginModule = pluginModuleInfo &&	bc.amdResources[pluginModuleInfo.mid],
+						pluginId = pluginModule && pluginModule.mid,
+						pluginProc = bc.plugins[pluginId];
+					if(!pluginModule){
+						return 0;
+					}else if(!pluginProc){
+						if(!pluginModule.noBuildResolver){
+							bc.log("missingPluginResolver", ["module", referenceModule.mid, "plugin", pluginId]);
+						}
+						return pluginModule;
+					}else{
+						// flatten the list of modules returned from the plugin
+						var modules = [].concat(pluginProc.start(match[2], referenceModule, bc));
+						return modules.concat.apply([], modules);
+					}
+				}else{
+					var moduleInfo = bc.getSrcModuleInfo(mid, referenceModule),
+						module = moduleInfo && bc.amdResources[moduleInfo.mid];
+					return module;
+				}
+			};
+
 	})();
 
 
@@ -393,8 +431,8 @@ define([
 			layer.include = layer.include || [];
 			layer.boot = !!layer.boot;
 			layer.discard = !!layer.discard;
-			layer.noref = !!(layer.noref!==undefined ? layer.noref : bc.noref);
 			layer.compat = layer.compat!==undefined ? layer.compat : (bc.layerCompat ||"");
+			layer.noref = !!(layer.noref!==undefined ? layer.noref : (layer.compat=="1.6" ? true : bc.noref));
 
 			var tlm = mid.split("/")[0],
 				pack = bc.packages[tlm],
@@ -495,7 +533,7 @@ define([
 		if(value){
 			value = value + "";
 			value = value.toLowerCase();
-			if(!/^((comments|shrinksafe)(\.keeplines)?)|(closure(\.keeplines)?)$/.test(value)){
+			if(!/^(((comments|shrinksafe)(\.keeplines)?)|(closure(\.keeplines)?|uglify(\.keeplines)?))$/.test(value)){
 				bc.log("inputUnknownOptimize", ["value", value]);
 				value = 0;
 			}else{
@@ -508,6 +546,15 @@ define([
 	}
 	bc.optimize = fixupOptimize(bc.optimize);
 	bc.layerOptimize = fixupOptimize(bc.layerOptimize);
+
+	if(/closure/.test(bc.optimize) || /closure/.test(bc.layerOptimize)){
+		bc.optimizeOptions = bc.optimizeOptions || {};
+		// ECMASCRIPT_2017 is necessary to avoid throwing errors on block-scoped functions
+		// https://github.com/google/closure-compiler/issues/3189
+		bc.optimizeOptions.languageIn = bc.optimizeOptions.languageIn || 'ECMASCRIPT_2017';
+		// ECMASCRIPT3 is necessary to preserve compatibility with older browsers/JS runtimes
+		bc.optimizeOptions.languageOut = bc.optimizeOptions.languageOut || 'ECMASCRIPT3';
+	}
 
 	(function(){
 		var fixedScopeMap = {dojo:"dojo", dijit:"dijit", dojox:"dojox"};
@@ -550,6 +597,7 @@ define([
 	if(bc.check){
 		(function(){
 			var toDump = {
+				aliases:1,
 				basePath:1,
 				buildReportDir:1,
 				buildReportFilename:1,
@@ -562,13 +610,14 @@ define([
 				destModules:1,
 				destPackages:1,
 				destPathTransforms:1,
-				destPathsMapProg:1,
 				dirs:1,
 				discoveryProcs:1,
 				files:1,
+				insertAbsMids:1,
 				internStringsSkipList:1,
 				layers:1,
 				localeList:1,
+				includeLocales: 1,
 				maxOptimizationProcesses:1,
 				mini:1,
 				optimize:1,
@@ -582,7 +631,8 @@ define([
 				startTimestamp:1,
 				staticHasFeatures:1,
 				stripConsole:1,
-				trees:1
+				trees:1,
+				useSourceMaps:1
 			};
 			for(var p in toDump){
 				toDump[p] = bc[p];

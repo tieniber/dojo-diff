@@ -1,4 +1,4 @@
-define({ root: {
+﻿define({ root: {
 //begin v1.x content
 	previousButton: "◄",
 	nextButton: "►",
@@ -10,8 +10,12 @@ define({ root: {
 }
 //end v1.x content
 ,
+"bs": true,
+"mk": true,
+"sr": true,
 "zh": true,
 "zh-tw": true,
+"uk": true,
 "tr": true,
 "th": true,
 "sv": true,
@@ -24,19 +28,24 @@ define({ root: {
 "pl": true,
 "nl": true,
 "nb": true,
+"lt": true,
 "ko": true,
 "kk": true,
 "ja": true,
 "it": true,
+"id": true,
 "hu": true,
+"hr": true,
 "he": true,
 "fr": true,
 "fi": true,
 "es": true,
 "el": true,
+"eu": true,
 "de": true,
 "da": true,
 "cs": true,
 "ca": true,
+"bg": true,
 "ar": true
 });

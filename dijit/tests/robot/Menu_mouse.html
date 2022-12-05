@@ -47,7 +47,7 @@
 
 								// However, just moving over the MenuBarItem shouldn't have opened the menu
 								doh.t(helpers.isHidden("fileMenu"), "File menu is hidden");
-							}), 1000);	// 1000ms == give IE time to make that backgroune iframe
+							}), 1000);	// 1000ms == give IE time to make that background iframe
 
 							return d;
 						}
@@ -267,19 +267,21 @@
 							doh.t(helpers.isHidden(menu), "menu should be initially hidden");
 
 							// click random point on screen
-							robot.mouseMoveAt("link", 500, 500);
+							robot.mouseMoveAt("input", 500, 500);
 							robot.mouseClick({right: true}, 500);
 
 							robot.sequence(d.getTestCallback(function(){
 								doh.t(helpers.isVisible(menu), "menu is now shown");
 
-								var linkCoords = domGeom.position("link");
+								var inputCoords = domGeom.position("input");
 									menuCoords = domGeom.position(menu.domNode);
 
-								doh.t(menuCoords.x > linkCoords.x, "to right of link left edge");
-								doh.t(menuCoords.x < linkCoords.x + linkCoords.w, "to left of link right edge");
-								doh.t(menuCoords.y > linkCoords.y, "menu (" + menuCoords.y + ") starts below top of link (" + linkCoords.y + ")");
-								doh.t(menuCoords.y < linkCoords.y + linkCoords.h, "menu (" + menuCoords.y + ") starts above bottom of link (" + linkCoords.y + "+" + linkCoords.h + ")");
+								doh.t(menuCoords.x > inputCoords.x, "to right of link left edge");
+								doh.t(menuCoords.x < inputCoords.x + inputCoords.w, "to left of link right edge");
+								doh.t(menuCoords.y > inputCoords.y, "menu (" + menuCoords.y + ") starts below top of link (" + inputCoords.y + ")");
+								doh.t(menuCoords.y < inputCoords.y + inputCoords.h, "menu (" + menuCoords.y + ") starts above bottom of link (" + inputCoords.y + "+" + inputCoords.h + ")");
+
+								doh.f(domClass.contains("windowContextMenuFirstChoice", "dijitMenuItemSelected"), "first choice not marked as selected");
 							}), 1000);
 
 							return d;
@@ -363,6 +365,32 @@
 					}
 				]);
 
+				doh.register("Left click menu mouse test", {
+					name: "open left click context menu",
+					timeout: 5000,
+					runTest: function(){
+						var d = new doh.Deferred();
+
+						robot.mouseMoveAt("input2", 500, 1);
+						robot.mouseClick({left: true}, 500);
+
+						robot.sequence(d.getTestErrback(function(){
+							var menu = registry.byId("leftClickContextMenu");
+							doh.t(helpers.isVisible(menu), "menu is now shown");
+
+							// close menu
+							robot.mouseMove(2, 2, 100);
+							robot.mouseClick({left: true}, 100);
+
+							robot.sequence(d.getTestCallback(function(){
+								doh.t(helpers.isHidden(menu), "menu disappeared");
+							}), 1000);
+						}), 1000);
+
+						return d;
+					}
+				});
+
 				doh.register("More MenuBar mouse tests", [
 					{
 						name: "MenuBar selection and cancellation",
@@ -411,40 +439,37 @@
 								var
 								fileMenu = registry.byId("fileMenu"),
 								editMenu = registry.byId("editMenu"),
-								handler = fileMenu.connect(fileMenu, 'onOpen',
-									function(){
-										fileMenu.disconnect(handler);
-										setTimeout(d.getTestErrback(function(){
-											doh.t(helpers.isVisible(fileMenu), "File menu should be visible #2");
-											handler = fileMenu.connect(fileMenu, 'onClose',
-												function(){
-													fileMenu.disconnect(handler);
+								handler = fileMenu.on("open", function(){
+									handler.remove();
+									setTimeout(d.getTestErrback(function(){
+										doh.t(helpers.isVisible(fileMenu), "File menu should be visible #2");
+										handler = fileMenu.on("close", function(){
+											handler.remove();
+											setTimeout(d.getTestErrback(function(){
+												doh.t(helpers.isHidden(fileMenu), "File menu should be hidden #3");
+												handler = editMenu.on("open", function(){
+													handler.remove();
 													setTimeout(d.getTestErrback(function(){
-														doh.t(helpers.isHidden(fileMenu), "File menu should be hidden #3");
-														handler = editMenu.connect(editMenu, 'onOpen',
+														doh.t(helpers.isVisible(editMenu), "Edit menu should be visible");
+														handler = editMenu.on("close",
 															function(){
-																editMenu.disconnect(handler);
-																setTimeout(d.getTestErrback(function(){
-																	doh.t(helpers.isVisible(editMenu), "Edit menu should be visible");
-																	handler = editMenu.connect(editMenu, 'onClose',
-																		function(){
-																			editMenu.disconnect(handler);
-																			setTimeout(d.getTestCallback(function(){
-																				doh.t(helpers.isHidden(editMenu), "Edit menu disappeared #2");
-																			}), 150);
-																		});
-																	var paste = domGeom.position('paste');
-																	robot._mouseMove(paste.x + (paste.w >> 1), paste.y + paste.h + 20, false, 1);
-																	// click point on screen under the Edit menu
-																	robot.mouseClick({left: true}, 100);
+																handler.remove();
+																setTimeout(d.getTestCallback(function(){
+																	doh.t(helpers.isHidden(editMenu), "Edit menu disappeared #2");
 																}), 150);
 															});
-														robot.mouseMoveAt("edit", 0, 1);
+														var paste = domGeom.position('paste');
+														robot._mouseMove(paste.x + (paste.w >> 1), paste.y + paste.h + 20, false, 1);
+														// click point on screen under the Edit menu
+														robot.mouseClick({left: true}, 100);
 													}), 150);
 												});
-											robot.mouseMoveAt("view", 0, 1); // #9846
-										}), 150);
-									});
+											robot.mouseMoveAt("edit", 0, 1);
+											}), 150);
+										});
+										robot.mouseMoveAt("view", 0, 1); // #9846
+									}), 150);
+								});
 							}, 1);
 							robot.mouseClick({left: true}, 1); // click File that starts the event sequence above
 
@@ -486,7 +511,9 @@
 								doh.t(helpers.isHidden("editMenu"), "View menu is hidden");
 							}), 500);
 
-							// move to View item with keyboard
+							// Move to View item with keyboard.  Focus should still on "File".  Previously this test
+							// assumed that hovering "edit" would move focus there.
+							robot.keyPress(keys.RIGHT_ARROW, 1000, {});
 							robot.keyPress(keys.RIGHT_ARROW, 1000, {});
 							robot.sequence(d.getTestCallback(function(){
 								doh.t(helpers.isHidden("viewMenu"), "View menu is hidden");
@@ -558,6 +585,75 @@
 						}
 					}
 				]);
+
+				doh.register("passivePopupDelay", [
+					function setup(){
+						registry.byId("menubar").set("passivePopupDelay", 300);
+					},
+					{
+						name: "mouse over file MenuBarItem",
+						timeout: 4000,
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							// Check initial conditions
+							doh.f(domClass.contains("file", "dijitMenuItemHover"), "File MenuBarItem doesn't have hover effect");
+							doh.t(helpers.isHidden("fileMenu"), "File menu is hidden");
+
+							// Move over the File MenuBarItem
+							robot.mouseMoveAt("file", 500, 1000);
+
+							robot.sequence(d.getTestCallback(function(){
+								doh.t(helpers.isVisible("fileMenu"), "File menu is visible");
+								doh.f(domClass.contains("new", "dijitMenuItemSelected"),
+										"New MenuItem should not have selected class, actual class is: " + dom.byId("new").className);
+							}), 1000);
+
+							return d;
+						}
+					},
+
+					{
+						name: "hover edit menu item",
+						timeout: 4000,
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							robot.mouseMoveAt("edit", 500, 500);
+
+							robot.sequence(d.getTestCallback(function(){
+								// Since we've already activated the MenuBar by clicking "File",
+								// hovering over "Edit" should automatically show the edit menu
+								doh.t(helpers.isVisible("editMenu"), "Edit menu is visible");
+
+								// And also, the file menu should have disappeared
+								doh.t(helpers.isHidden("fileMenu"), "File menu is hidden");
+							}), 500);
+
+							return d;
+						}
+					},
+
+
+					{
+						name: "close menu by click",
+						timeout: 4000,
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							robot.mouseMoveAt("link", 500, 500);
+							robot.mouseClick({left: true}, 500);
+
+							robot.sequence(d.getTestCallback(function(){
+								doh.f(helpers.isVisible("editMenu"), "Edit menu is hidden");
+							}), 500);
+
+							return d;
+						}
+					}
+
+				]);
+
 
 				doh.run();
 			});

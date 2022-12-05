@@ -57,6 +57,7 @@
 			dojo.require("dijit.ColorPalette");
 			dojo.require("dijit.Tooltip");
 
+			dojo.require("dijit.Dialog");
 			dojo.require("dijit.Menu");
 			dojo.require("dijit.MenuItem");
 			dojo.require("dijit.PopupMenuItem");
@@ -94,7 +95,7 @@
 		<span data-dojo-type="dijit/Tooltip" data-dojo-props='connectId:["1465"]'>tooltip on button</span>
 		<button data-dojo-type="ViewButton" id="T1466" title="view title" data-dojo-props='onClick:function(){ console.log("clicked simple"); }'>
 		</button>
-		<button id="comboCreate" title="creative title" data-dojo-type="dijit/form/ComboButton" data-dojo-props='optionsTitle:"save options", onClick:function(){ console.log("clicked combo save") },
+		<button id="comboCreate" title="creative title" data-dojo-type="dijit/form/ComboButton" data-dojo-props='optionsTitle:"save options", onClick:function(){ console.log("clicked combo create") },
 				iconClass:"plusIcon"'>
 			<span>Create</span>
 			<span id="createMenu" data-dojo-type="dijit/Menu">
@@ -448,13 +449,11 @@
 		<button id="SubmitPlain" data-dojo-type="dijit/form/Button" name="Plain" type="submit" value="Plain Submit">Plain Submit</button>
 		<button id="SubmitCombo" data-dojo-type="dijit/form/ComboButton" name="Combo" type="submit" value="Combo Submit"
 				data-dojo-props="label: 'Combo Submit'">
-			Combo Submit
 			<span data-dojo-type="dijit/Menu">
 				<span id="SubmitComboMenuItem" data-dojo-type="dijit/MenuItem" data-dojo-props='onClick:function(){ dijit.byId("myForm").submit(); }'>Combo MenuItem Submit</span>
 			</span>
 		</button>
-		<button id="SubmitDropDown" data-dojo-type="dijit/form/DropDownButton" name="DropDown" type="submit" value="DropDown Submit"
-				data-dojo-props="label: 'DropDown Submit'">
+		<button id="SubmitDropDown" data-dojo-type="dijit/form/DropDownButton" name="DropDown" type="submit" value="DropDown Submit">
 			DropDown Submit
 			<span data-dojo-type="dijit/Menu">
 				<span id="SubmitDropDownMenuItem" data-dojo-type="dijit/MenuItem" data-dojo-props='onClick:function(){ dijit.byId("myForm").submit(); }'>DropDown MenuItem Submit</span>

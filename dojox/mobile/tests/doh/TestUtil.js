@@ -5,6 +5,23 @@ require([
 	"doh/runner"	//doh functions
 ]);
 
+function fireOnInput(obj){
+	var anchorNode;
+	if(typeof obj === "string"){
+		var demoWidget = dijit.byId(obj);
+		anchorNode = demoWidget.domNode;
+	}else{
+		anchorNode = obj;
+	}
+	if(dojo.isIE<9){
+		anchorNode.fireEvent( "onpropertychange" );
+	}else{
+		var e = document.createEvent('Events');
+		e.initEvent('input', true, true);
+		anchorNode.dispatchEvent(e);
+	}
+}
+
 function fireOnClick(obj){
 	var anchorNode;
 	if(typeof obj === "string"){
@@ -33,8 +50,12 @@ function fireOnMouseDown(obj){
 	if(dojo.isIE<9){
 		anchorNode.fireEvent( "onmousedown" );
 	}else{
+		var eventName = "mousedown";
+		if (dojo.isIE >= 10){
+			eventName = "MSPointerDown";
+		}
 		var e = document.createEvent('Events');
-		e.initEvent('mousedown', true, true);
+		e.initEvent(eventName, true, true);
 		anchorNode.dispatchEvent(e);
 	}
 }
@@ -49,22 +70,27 @@ function fireOnMouseUp(obj){
 	if(dojo.isIE<9){
 		anchorNode.fireEvent( "onmouseup" );
 	}else{
+		var eventName = "mouseup";
+		if (dojo.isIE >= 10){
+			eventName = "MSPointerUp";
+		}
 		var e = document.createEvent('Events');
-		e.initEvent('mouseup', true, true);
+		e.initEvent(eventName, true, true);
 		anchorNode.dispatchEvent(e);
 	}
 }
 
 function fireTouchEvent(eventtype, node, x, y){
+	var e;
 	if(dojo.isIE<9){
-		var e = document.createEventObject(window.event);
+		e = document.createEventObject(window.event);
 		e.button = 1;
 		e.pageX = x;
 		e.pageY = y;
 		node.fireEvent( "on" + eventtype[1], e );
 	}else{
-		var e = document.createEvent('Events');
-		e.initEvent( dojo.has('touch') ? eventtype[0] : eventtype[1], true, true);
+		e = document.createEvent('Events');
+		e.initEvent( dojo.has("touch-events") ? eventtype[0] : eventtype[1], true, true);
 		e.touches = [ { pageX: x, pageY: y } ];
 		e.pageX = x;
 		e.pageY = y;
@@ -218,4 +244,7 @@ function verifyTabBarButton(id, text, classNames, visibility1, visibility2, regE
 		console.log("There is no iconNode2. id=" + id);
 	}
 	doh.assertEqual(text, dojo.trim(demoWidget.labelNode.innerHTML), "id=" +id);
+	if(demoWidget.badgeObj){
+		doh.assertEqual(demoWidget.badgeObj.className, demoWidget.badgeClass, "Unexpected badge className. id=" + id);
+	}
 }

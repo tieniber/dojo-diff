@@ -11,24 +11,32 @@
 			@import "../../../dojo/resources/dojo.css";
 			@import "../../../dijit/themes/dijit.css";
 			@import "../../../dijit/themes/claro/claro.css";
-		</style>			
+			
+			.dijitCalendar .Highlighted {
+				background-color: #fff0b4;
+			}
+			.dijitCalendar .Highlighted .dijitCalendarDateLabel {
+				color: red !important;
+				border: solid 1px #fff0b4;
+			}
+		</style>
 	</head>
 	
 	<body class="claro">
 		<script type="text/javascript" 
-						data-dojo-config="async: true, parseOnLoad: true"
-		 				src="../../../dojo/dojo.js"></script>
+				data-dojo-config="async: true, parseOnLoad: true, paths : {'demo' : '../dojox/calendar/tests'}"
+ 				src="../../../dojo/dojo.js"></script>
 		
 			<script type="text/javascript">
 
-			require(["dojo/ready", "dojo/_base/lang", "dojo/_base/sniff", "dojo/_base/array", "dojo/_base/fx", "dojo/on", 
+			require(["dojo/ready", "dojo/_base/lang", "dojo/_base/sniff", "dojo/_base/array", "dojo/_base/fx", "dojo/dom-class", "dojo/on", 
 			         "dojo/date/locale", "dojo/parser",	"dojo/dom", "dojo/dom-construct",	"dojo/store/Memory", 
-			         "dojo/store/Observable",	"dojox/calendar/Calendar", "dijit/Calendar",  "dijit/TitlePane", 
+			         "dojo/store/Observable",	"dojox/calendar/Calendar", "demo/DatePicker",  "dijit/TitlePane", 
 			         "dijit/layout/BorderContainer", "dijit/layout/ContentPane", "dijit/form/CheckBox", 
 			         "dijit/form/TextBox", "dijit/form/DateTextBox", "dijit/form/TimeTextBox", 
 			         "dijit/form/Button", "dijit/form/ComboBox", "dijit/Menu", "dijit/MenuItem"	],
 
-				function(ready, lang, has, arr, fx, on, locale, parser, dom, domConstruct,
+				function(ready, lang, has, arr, fx, domClass, on, locale, parser, dom, domConstruct,
 					Memory, Observable, Calendar){
 
 					ready(function(){
@@ -40,7 +48,7 @@
 							"Hint: Resize an event by clicking on one of its ends and dragging it"
 						];
 						
-						hintIdx = 0;
+						var hintIdx = 0;
 						dom.byId("hint").innerHTML = hints[0];
 												
 						setInterval(function(){
@@ -59,39 +67,59 @@
 							return item.calendar == "cal1" ? "Calendar1" : "Calendar2"
 						});
 						
-						// Calendar model creation						
-						var modelBase = [
-							{day: 1, start: [10,00], duration: 1400},
-							{day: 2, start: [10,30], duration: 120},
-							{day: 2, start: [12,0], duration: 240},
-							{day: 3, start: [6,0], duration: 180},
-							{day: 3, start: [0,0], duration: 2880, allDay: true}
+						// Calendar model creation
+						var dataItemsTemplate = [
+							{day: 1, start: [10,0], duration: 1400, calendar: "cal1"},
+							{day: 2, start: [10,30], duration: 120, calendar: "cal2"},
+							{day: 2, start: [12,0], duration: 240, calendar: "cal1"},
+							{day: 3, start: [6,0], duration: 180, calendar: "cal2"},
+							{day: 3, start: [0,0], duration: 2880, allDay: true, calendar: "cal1"}
+						];
+						var decorationItemsTemplate = [
+							{day: 4, start: [10,10], duration: 360}
 						];
 						
-						var someData = [];
-												
-						var startOfWeek = calendar.floorToWeek(new calendar.dateClassObj());
-						
-						for (var id=0; id<modelBase.length; id++) {
-							var newObj = {
-								id: id,
-								summary: "New Event " + id,
-								startTime: new calendar.dateClassObj(startOfWeek.getTime()),
-								endTime: new calendar.dateClassObj(startOfWeek.getTime()),
-								calendar: id%2 == 0 ? "cal1" : "cal2",
-								allDay: modelBase[id].allDay
+						var dateClassObj = calendar.dateClassObj;
+
+						var startOfWeek = calendar.floorToWeek(new dateClassObj());
+
+						var createModel = function(modelTemplate){
+							
+							var someData = [];
+
+							for (var id=0; id<modelTemplate.length; id++) {
+								
+								var evtTmpl = modelTemplate[id];
+								var newObj = {
+									id: id,
+									summary: "New Event " + id,
+									startTime: new dateClassObj(startOfWeek.getTime()),
+									endTime: new dateClassObj(startOfWeek.getTime()),
+									calendar: evtTmpl.calendar,
+									allDay: evtTmpl.allDay
+								};
+
+								newObj.startTime = calendar.dateModule.add(newObj.startTime, "day", evtTmpl.day);
+								newObj.startTime.setHours(evtTmpl.start[0]);
+								newObj.startTime.setMinutes(evtTmpl.start[1]);
+
+								newObj.endTime = calendar.dateModule.add(newObj.startTime, "minute", evtTmpl.duration);
+
+								someData.push(newObj);
 							}
-
-							newObj.startTime = calendar.dateModule.add(newObj.startTime, "day", modelBase[id].day);
-							newObj.startTime.setHours(modelBase[id].start[0]);
-							newObj.startTime.setMinutes(modelBase[id].start[1]);
-
-							newObj.endTime = calendar.dateModule.add(newObj.startTime, "minute", modelBase[id].duration);
-
-							someData.push(newObj);
+							
+							return someData;
 						}
 						
-						calendar.set("store", new Observable(new Memory({data: someData})));
+						
+						var itemsData = createModel(dataItemsTemplate);
+						var decorationItemsData = createModel(decorationItemsTemplate);
+						var id = itemsData.length;
+						var store = new Observable(new Memory({data: itemsData}));
+						var decorationStore = new Observable(new Memory({data: decorationItemsData}));
+
+						calendar.set("store", store);
+						calendar.set("decorationStore", decorationStore);
 						calendar.set("date", startOfWeek);
 						
 						// Enable creation of event interactively by ctrl clicking grid.
@@ -130,7 +158,7 @@
 							id++;	
 							
 							return item;							
-						}
+						};
 						
 						calendar.set("createOnGridClick", true);
 						calendar.set("createItemFunc", createItem);						
@@ -144,7 +172,7 @@
 									return this._defaultItemToRendererKindFunc(item);
 								}
 							return null
-						}
+						};
 						
 						calendar.columnView.set("itemToRendererKindFunc", itemToRendererKindFunc);
 						calendar.columnView.secondarySheet.set("itemToRendererKindFunc", itemToRendererKindFunc);
@@ -168,11 +196,11 @@
 						// refresh item panel on event selection.
 						var editedItem;
 						
-						selectionChanged = function(item){
+						var selectionChanged = function(item){
 							
 							var itemNull = item == null;
 							
-							widgets = [itemSummaryEditor, itemStartDateEditor, itemStartTimeEditor, itemEndDateEditor, 
+							var widgets = [itemSummaryEditor, itemStartDateEditor, itemStartTimeEditor, itemEndDateEditor,
 								itemEndTimeEditor, calendarEditor, allDayCB, deleteItemButton, updateItemButton];
 							
 							arr.forEach(widgets, function(w){
@@ -197,7 +225,7 @@
 								calendarEditor.set("value", item.calendar == "cal1" ? "Calendar 1" : "Calendar 2");																					
 								allDayCB.set("checked", allDay, false);
 							}																						
-						}
+						};
 						
 						calendar.on("change", function(e){							
 							selectionChanged(e.newValue);							
@@ -209,7 +237,10 @@
 						
 						// configure item properties panel
 						calendar.on("timeIntervalChange", function(e){
-							dateChooser.set("value", e.startTime);
+							datePicker.set("currentFocus", e.startTime, false);							
+							datePicker.set("minDate", e.startTime);
+							datePicker.set("maxDate", e.endTime);
+							datePicker._populateGrid();
 						});
 						
 						allDayCB.on("change", function(value){
@@ -288,9 +319,9 @@
 						});
 																										
 						// Synchronize date picker.																	
-						dateChooser.set("value", startOfWeek);
-						dateChooser.on("change", function(e){
-							var d = dateChooser.get("value");
+						datePicker.set("value", startOfWeek);
+						datePicker.on("change", function(e){
+							var d = datePicker.get("value");
 							calendar.set("date", d);
 						});						
 										
@@ -322,7 +353,7 @@
 			
 			<div data-dojo-type="dijit.layout.BorderContainer" style="width:100%;height:100%" data-dojo-props="design:'sidebar', gutters:true" >
 		    <div data-dojo-type="dijit.layout.ContentPane" style="width:200px" data-dojo-props="splitter:false, region:'leading'">
-		        <div data-dojo-id="dateChooser" data-dojo-type="dijit.Calendar" style="width:100%"></div>
+		        <div data-dojo-id="datePicker" data-dojo-type="demo.DatePicker" style="width:100%"></div>
 						<div data-dojo-type="dijit.TitlePane" data-dojo-props="title:'Calendars', style:'margin-top:10px;'" >
 							<div>
 								<input type="checkbox" data-dojo-id="calendar1CB" data-dojo-type="dijit.form.CheckBox" checked="true"/>

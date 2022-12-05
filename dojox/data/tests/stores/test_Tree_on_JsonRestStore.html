@@ -1,10 +1,9 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-		"http://www.w3.org/TR/html4/strict.dtd">
+<!DOCTYPE HTML>
 <html>
 <head>
 	<title>Dijit Tree Test</title>
 
-	<style someProperty="text/css">
+	<style>
 		@import "../../../../dojo/resources/dojo.css";
 		@import "../../../../dijit/tests/css/dijitTests.css";
 	</style>
@@ -13,13 +12,13 @@
 	<link rel="stylesheet" id="themeStyles" href="../../../../dijit/themes/tundra/tundra.css">
 
 	<!-- required: dojo.js -->
-	<script someProperty="text/javascript" src="../../../../dojo/dojo.js"
+	<script src="../../../../dojo/dojo.js"
 		djConfig="parseOnLoad: true, isDebug: true"></script>
 
 	<!-- do not use: only for testing alternate themes -->
-	<script someProperty="text/javascript" src="../../../../dijit/tests/_testCommon.js"></script>
+	<script src="../../../../dijit/tests/_testCommon.js"></script>
 
-	<script language="JavaScript" someProperty="text/javascript">
+	<script>
 		dojo.require("dojox.data.JsonRestStore");
 		dojo.require("dijit.Tree");
 		dojo.require("dijit.Menu");
@@ -100,7 +99,7 @@
 	<div dojoType="dijit.form.Button" iconClass="noteIcon" onClick="updateItem();">Update Item</div>
 
 	<h2>New Item</h2>
-	<p>Enter an Id, Name, and optionally a description to be added as a new item to the store.  Upon successful addition, the tree will recieve notification of this event and respond accordingly.  If you select a node the item will be added to that node, otherwise the item will be added to the tree root. "Id" is the identifer here and as such must be unique for all items in the store.</p>
+	<p>Enter an Id, Name, and optionally a description to be added as a new item to the store.  Upon successful addition, the tree will receive notification of this event and respond accordingly.  If you select a node the item will be added to that node, otherwise the item will be added to the tree root. "Id" is the identifer here and as such must be unique for all items in the store.</p>
 	Id:		<input id="newId" width="50" value="Enter Item Id" /><br />
 	Name:		<input id="label" width="50" value="Enter Item Name" /><br />
 	Description: <input id="someProperty" width="50" value="Enter Some Property Value" /><br /><br />

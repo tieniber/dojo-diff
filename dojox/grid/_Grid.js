@@ -226,7 +226,7 @@ define([
 		height: '',
 
 		// structure: dojox.grid.__ViewDef|dojox.grid.__ViewDef[]|dojox.grid.__CellDef[]|Array[dojox.grid.__CellDef[]]
-		//		View layout defintion.
+		//		View layout definition.
 		structure: null,
 
 		// elasticView: Integer
@@ -988,10 +988,10 @@ define([
 				if(this.layout.cells.length){
 					this.scroller.updateRowCount(inRowCount);
 				}
-				this._resize();
 				if(this.layout.cells.length){
 					this.setScrollTop(this.scrollTop);
 				}
+				this._resize();
 			}
 		},
 

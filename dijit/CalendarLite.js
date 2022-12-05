@@ -7,16 +7,17 @@ define([
 	"dojo/date/stamp", // stamp.fromISOString
 	"dojo/dom", // dom.setSelectable
 	"dojo/dom-class", // domClass.contains
-	"dojo/_base/event", // event.stop
+	"dojo/dom-attr",
 	"dojo/_base/lang", // lang.getObject, lang.hitch
+	"dojo/on",
 	"dojo/sniff", // has("ie") has("webkit")
 	"dojo/string", // string.substitute
 	"./_WidgetBase",
 	"./_TemplatedMixin",
 	"dojo/text!./templates/Calendar.html",
-	"./hccss"	// not used directly, but sets CSS class on <body>
-], function(array, declare, cldrSupplemental, date, locale, stamp, dom, domClass, event, lang, has, string,
-			_WidgetBase, _TemplatedMixin, template){
+	"./a11yclick",	// not used directly, but template has ondijitclick in it
+	"./hccss"    // not used directly, but sets CSS class on <body>
+], function(array, declare, cldrSupplemental, date, locale, stamp, dom, domClass, domAttr, lang, on, has, string, _WidgetBase, _TemplatedMixin, template){
 
 
 	// module:
@@ -73,6 +74,12 @@ define([
 		//		Order fields are traversed when user hits the tab key
 		tabIndex: "0",
 
+		// dayOffset: Integer
+		//		(Optional) The first day of week override. By default the first day of week is determined
+		//		for the current locale (extracted from the CLDR).
+		//		Special value -1 (default value), means use locale dependent value.
+		dayOffset: -1,
+
 		// currentFocus: Date
 		//		Date object containing the currently focused date, or the date which would be focused
 		//		if the calendar itself was focused.   Also indicates which year and month to display,
@@ -82,7 +89,7 @@ define([
 		// Put the summary to the node with role=grid
 		_setSummaryAttr: "gridNode",
 
-		baseClass:"dijitCalendar",
+		baseClass: "dijitCalendar dijitCalendarLite",
 
 		_isValidDate: function(/*Date*/ value){
 			// summary:
@@ -99,13 +106,14 @@ define([
 			//		Support get('value')
 
 			// this.value is set to 1AM, but return midnight, local time for back-compat
-			if(this.value && !isNaN(this.value)){
-				var value = new this.dateClassObj(this.value);
+			var storedVal = this._get("value");
+			if(storedVal && !isNaN(storedVal)){
+				var value = new this.dateClassObj(storedVal);
 				value.setHours(0, 0, 0, 0);
 
 				// If daylight savings pushes midnight to the previous date, fix the Date
 				// object to point at 1am so it will represent the correct day. See #9366
-				if(value.getDate() < this.value.getDate()){
+				if(value.getDate() < storedVal.getDate()){
 					value = this.dateModule.add(value, "hour", 1);
 				}
 				return value;
@@ -128,7 +136,7 @@ define([
 				value = stamp.fromISOString(value);
 			}
 			value = this._patchDate(value);
-			
+
 			if(this._isValidDate(value) && !this.isDisabledDate(value, this.lang)){
 				this._set("value", value);
 
@@ -153,7 +161,7 @@ define([
 			// summary:
 			//		Convert Number into Date, or copy Date object.   Then, round to nearest day,
 			//		setting to 1am to avoid issues when DST shift occurs at midnight, see #8521, #9366)
-			if(value){
+			if(value || value === 0){
 				value = new this.dateClassObj(value);
 				value.setHours(1, 0, 0, 0);
 			}
@@ -181,18 +189,21 @@ define([
 
 			var month = new this.dateClassObj(this.currentFocus);
 			month.setDate(1);
+			month = this._patchDate(month);	// needed if currentFocus is start or end of DST, see #17033
 
 			var firstDay = month.getDay(),
 				daysInMonth = this.dateModule.getDaysInMonth(month),
 				daysInPreviousMonth = this.dateModule.getDaysInMonth(this.dateModule.add(month, "month", -1)),
 				today = new this.dateClassObj(),
-				dayOffset = cldrSupplemental.getFirstDayOfWeek(this.lang);
-			if(dayOffset > firstDay){ dayOffset -= 7; }
+				dayOffset = this.dayOffset >= 0 ? this.dayOffset : cldrSupplemental.getFirstDayOfWeek(this.lang);
+			if(dayOffset > firstDay){
+				dayOffset -= 7;
+			}
 
 			// If they didn't provide a summary, change the default summary to match with the new month
 			if(!this.summary){
-					var monthNames = this.dateLocaleModule.getNames('months', 'wide', 'standAlone', this.lang, month)
-					this.gridNode.setAttribute("summary", monthNames[month.getMonth()]);
+				var monthNames = this.dateLocaleModule.getNames('months', 'wide', 'standAlone', this.lang, month)
+				this.gridNode.setAttribute("summary", monthNames[month.getMonth()]);
 			}
 
 			// Mapping from date (as specified by number returned from Date.valueOf()) to corresponding <td>
@@ -248,10 +259,16 @@ define([
 				template.dijitDateValue = dateVal;
 
 				// Set Date string (ex: "13").
-				this._setText(this.dateLabels[idx], date.getDateLocalized ? date.getDateLocalized(this.lang) : date.getDate());
+
+				var localizedDate = date.getDateLocalized ? date.getDateLocalized(this.lang) : date.getDate()
+				this._setText(this.dateLabels[idx], localizedDate);
+				domAttr.set(template, 'aria-label', locale.format(date, {
+					selector: 'date',
+					formatLength: 'long'
+				}));
 			}, this);
 		},
-		
+
 		_populateControls: function(){
 			// summary:
 			//		Fill in localized month, and prev/current/next years
@@ -260,16 +277,16 @@ define([
 
 			var month = new this.dateClassObj(this.currentFocus);
 			month.setDate(1);
-			
+
 			// set name of this month
 			this.monthWidget.set("month", month);
-			
+
 			var y = month.getFullYear() - 1;
 			var d = new this.dateClassObj();
 			array.forEach(["previous", "current", "next"], function(name){
 				d.setFullYear(y++);
-				this._setText(this[name+"YearLabelNode"],
-					this.dateLocaleModule.format(d, {selector:'year', locale:this.lang}));
+				this._setText(this[name + "YearLabelNode"],
+					this.dateLocaleModule.format(d, {selector: 'year', locale: this.lang}));
 			}, this);
 		},
 
@@ -291,7 +308,7 @@ define([
 
 			this.dateModule = params.datePackage ? lang.getObject(params.datePackage, false) : date;
 			this.dateClassObj = this.dateModule.Date || Date;
-			this.dateLocaleModule = params.datePackage ? lang.getObject(params.datePackage+".locale", false) : locale;
+			this.dateLocaleModule = params.datePackage ? lang.getObject(params.datePackage + ".locale", false) : locale;
 		},
 
 		_createMonthWidget: function(){
@@ -309,14 +326,14 @@ define([
 			// Markup for days of the week (referenced from template)
 			var d = this.dowTemplateString,
 				dayNames = this.dateLocaleModule.getNames('days', this.dayWidth, 'standAlone', this.lang),
-				dayOffset = cldrSupplemental.getFirstDayOfWeek(this.lang);
-			this.dayCellsHtml = string.substitute([d,d,d,d,d,d,d].join(""), {d: ""}, function(){
+				dayOffset = this.dayOffset >= 0 ? this.dayOffset : cldrSupplemental.getFirstDayOfWeek(this.lang);
+			this.dayCellsHtml = string.substitute([d, d, d, d, d, d, d].join(""), {d: ""}, function(){
 				return dayNames[dayOffset++ % 7];
 			});
 
 			// Markup for dates of the month (referenced from template), but without numbers filled in
 			var r = string.substitute(this.weekTemplateString, {d: this.dateTemplateString});
-			this.dateRowsHtml = [r,r,r,r,r,r].join("");
+			this.dateRowsHtml = [r, r, r, r, r, r].join("");
 
 			// Instantiate from template.
 			// dateCells and dateLabels arrays filled when _Templated parses my template.
@@ -345,17 +362,20 @@ define([
 			//		protected
 
 			var connect = lang.hitch(this, function(nodeProp, part, amount){
-				this.connect(this[nodeProp], "onclick", function(){
+				this[nodeProp].dojoClick = true;
+				return on(this[nodeProp], "click", lang.hitch(this, function(){
 					this._setCurrentFocusAttr(this.dateModule.add(this.currentFocus, part, amount));
-				});
+				}));
 			});
-			
-			connect("incrementMonth", "month", 1);
-			connect("decrementMonth", "month", -1);
-			connect("nextYearLabelNode", "year", 1);
-			connect("previousYearLabelNode", "year", -1);
+
+			this.own(
+				connect("incrementMonth", "month", 1),
+				connect("decrementMonth", "month", -1),
+				connect("nextYearLabelNode", "year", 1),
+				connect("previousYearLabelNode", "year", -1)
+			);
 		},
-		
+
 		_setCurrentFocusAttr: function(/*Date*/ date, /*Boolean*/ forceFocus){
 			// summary:
 			//		If the calendar currently has focus, then focuses specified date,
@@ -379,7 +399,7 @@ define([
 				this._populateControls();
 				this._markSelectedDates([this.value]);
 			}
-			
+
 			// set tabIndex=0 on new cell, and focus it (but only if Calendar itself is focused)
 			var newCell = this._getNodeByDate(date);
 			newCell.setAttribute("tabIndex", this.tabIndex);
@@ -389,7 +409,7 @@ define([
 
 			// set tabIndex=-1 on old focusable cell
 			if(oldCell && oldCell != newCell){
-				if(has("webkit")){	// see #11064 about webkit bug
+				if(has("webkit")){    // see #11064 about webkit bug
 					oldCell.setAttribute("tabIndex", "-1");
 				}else{
 					oldCell.removeAttribute("tabIndex");
@@ -408,14 +428,17 @@ define([
 			//		Handler for day clicks, selects the date if appropriate
 			// tags:
 			//		protected
-			event.stop(evt);
-			for(var node = evt.target; node && !node.dijitDateValue; node = node.parentNode);
+			evt.stopPropagation();
+			evt.preventDefault();
+			for(var node = evt.target; node && !node.dijitDateValue && node.dijitDateValue !== 0; node = node.parentNode){
+				;
+			}
 			if(node && !domClass.contains(node, "dijitCalendarDisabledDate")){
 				this.set('value', node.dijitDateValue);
 			}
 		},
 
-		_getNodeByDate : function(/*Date*/ value){
+		_getNodeByDate: function(/*Date*/ value){
 			// summary:
 			//		Returns the cell corresponding to the date, or null if the date is not within the currently
 			//		displayed month.
@@ -439,7 +462,9 @@ define([
 			array.forEach(this._selectedCells || [], lang.partial(mark, false));
 
 			// Mark newly selected cells.  Ignore dates outside the currently displayed month.
-			this._selectedCells = array.filter(array.map(dates, this._getNodeByDate, this), function(n){ return n;});
+			this._selectedCells = array.filter(array.map(dates, this._getNodeByDate, this), function(n){
+				return n;
+			});
 			array.forEach(this._selectedCells, lang.partial(mark, true));
 		},
 
@@ -455,9 +480,9 @@ define([
 			// locale: String?
 			// tags:
 			//		extension
-/*=====
-			return false; // Boolean
-=====*/
+			/*=====
+			 return false; // Boolean
+			 =====*/
 		},
 
 		getClassForDate: function(/*===== dateObject, locale =====*/){
@@ -469,9 +494,9 @@ define([
 			// tags:
 			//		extension
 
-/*=====
-			return ""; // String
-=====*/
+			/*=====
+			 return ""; // String
+			 =====*/
 		}
 	});
 
@@ -491,16 +516,18 @@ define([
 			//		Set the current month to display as a label
 			var monthNames = this.dateLocaleModule.getNames('months', 'wide', 'standAlone', this.lang, month),
 				spacer =
-					(has("ie") == 6 ? "" :	"<div class='dijitSpacer'>" +
-						array.map(monthNames, function(s){ return "<div>" + s + "</div>"; }).join("") + "</div>");
+					(has("ie") == 6 ? "" : "<div class='dijitSpacer'>" +
+						array.map(monthNames,function(s){
+							return "<div>" + s + "</div>";
+						}).join("") + "</div>");
 
 			// Set name of current month and also fill in spacer element with all the month names
 			// (invisible) so that the maximum width will affect layout.   But not on IE6 because then
 			// the center <TH> overlaps the right <TH> (due to a browser bug).
 			this.domNode.innerHTML =
 				spacer +
-				"<div class='dijitCalendarMonthLabel dijitCalendarCurrentMonthLabel'>" +
-				monthNames[month.getMonth()] + "</div>";
+					"<div class='dijitCalendarMonthLabel dijitCalendarCurrentMonthLabel'>" +
+					monthNames[month.getMonth()] + "</div>";
 		}
 	});
 

@@ -5,7 +5,7 @@ define([
 ], function(messages, defaultCopyright, defaultBuildNotice){
 	var bc = {
 		// 0 => no errors
-		// 1 => messages.getErrorCount()>0 at exist
+		// 1 => messages.getErrorCount()>0 at exit
 		exitCode:0,
 
 		// use this variable for all newlines inserted by build transforms
@@ -37,7 +37,7 @@ define([
 		amdResources:{},
 
 		closureCompilerPath:"../closureCompiler/compiler.jar",
-		maxOptimizationProcesses:5,
+		maxOptimizationProcesses:-1,//create as many processes as CPUs
 		buildReportDir:".",
 		buildReportFilename:"build-report.txt",
 

@@ -1,12 +1,9 @@
-define("doh/runner", ["dojo/main"], function(dojo){
+define("doh/runner", ["dojo/_base/lang"], function(lang){
 
 var doh = {
 	// summary:
 	//		Functions for registering and running automated tests.
 };
-
-// Remove for 2.0
-dojo.mixin(doh, dojo);
 
 // intentionally define global tests and global doh symbols
 // TODO: scrub these globals from tests and remove this pollution for 2.0
@@ -34,7 +31,9 @@ doh.error = function(){
 
 doh._AssertFailure = function(msg, hint){
 	if (doh.breakOnError) {
+		//>>excludeStart("debuggerCrashesRhino", /^shrinksafe.comments/.test(kwArgs.optimize));
 		debugger;
+		//>>excludeEnd("debuggerCrashesRhino")
 	}
 	if(!(this instanceof doh._AssertFailure)){
 		return new doh._AssertFailure(msg, hint);
@@ -59,7 +58,7 @@ doh.Deferred = function(canceller){
 	this.silentlyCancelled = false;
 };
 
-doh.extend(doh.Deferred, {
+lang.extend(doh.Deferred, {
 	getTestErrback: function(cb, scope){
 		// summary:
 		//		Replaces outer getTextCallback's in nested situations to avoid multiple callback(true)'s
@@ -213,11 +212,11 @@ doh.extend(doh.Deferred, {
 	}
 });
 
-doh.extend(doh.Deferred, {
+lang.extend(doh.Deferred, {
 	// Back compat methods, remove for 2.0
 
 	getFunctionFromArgs: function(){
-		// Like dojo.hitch but first arg (context) is optional
+		// Like lang.hitch but first arg (context) is optional
 		var a = arguments;
 		if((a[0])&&(!a[1])){
 			if(typeof a[0] == "function"){
@@ -226,7 +225,7 @@ doh.extend(doh.Deferred, {
 				return doh.global[a[0]];
 			}
 		}else if((a[0])&&(a[1])){
-			return doh.hitch(a[0], a[1]);
+			return lang.hitch(a[0], a[1]);
 		}
 		return null;
 	},
@@ -238,7 +237,7 @@ doh.extend(doh.Deferred, {
 	addCallback: function(cb, cbfn){
 		var enclosed = this.getFunctionFromArgs(cb, cbfn);
 		if(arguments.length > 2){
-			enclosed = doh.hitch(null, enclosed, arguments, 2);
+			enclosed = lang.hitch(null, enclosed, arguments, 2);
 		}
 		return this.then(enclosed);
 	},
@@ -246,7 +245,7 @@ doh.extend(doh.Deferred, {
 	addErrback: function(cb, cbfn){
 		var enclosed = this.getFunctionFromArgs(cb, cbfn);
 		if(arguments.length > 2){
-			enclosed = doh.hitch(null, enclosed, arguments, 2);
+			enclosed = lang.hitch(null, enclosed, arguments, 2);
 		}
 		return this.otherwise(enclosed);
 	},
@@ -254,7 +253,7 @@ doh.extend(doh.Deferred, {
 	addBoth: function(cb, cbfn){
 		var enclosed = this.getFunctionFromArgs(cb, cbfn);
 		if(arguments.length > 2){
-			enclosed = doh.hitch(null, enclosed, arguments, 2);
+			enclosed = lang.hitch(null, enclosed, arguments, 2);
 		}
 		return this.always(enclosed);
 	},
@@ -351,12 +350,12 @@ var
 	createFixture= function(group, test, type){
 		// test is a function, string, or fixture object
 		var tObj = test;
-		if(dojo.isString(test)){
+		if(lang.isString(test)){
 			tObj = {
 				name: test.replace("/\s/g", "_"), // FIXME: bad escapement
 				runTest: new Function("t", test)
 			};
-		}else if(dojo.isFunction(test)){
+		}else if(lang.isFunction(test)){
 			// if we didn't get a fixture, wrap the function
 			tObj = { "runTest": test };
 			if(test["name"]){
@@ -373,7 +372,7 @@ var
 				}
 			}
 			// FIXME: try harder to get the test name here
-		}else if(dojo.isString(tObj.runTest)){
+		}else if(lang.isString(tObj.runTest)){
 			tObj.runTest= new Function("t", tObj.runTest);
 		}
 		if(!tObj.runTest){
@@ -395,7 +394,7 @@ var
 	},
 
 	dumpArg= function(arg){
-		if(dojo.isString(arg)){
+		if(lang.isString(arg)){
 			return "string(" + arg + ")";
 		} else {
 			return typeof arg;
@@ -409,9 +408,9 @@ var
 		}
 		doh.debug("ERROR:");
 		if(testArgPosition){
-			doh.debug("\tillegal arguments provided to dojo.register; the test at argument " + testArgPosition + " wasn't a test.");
+			doh.debug("\tillegal arguments provided to doh.register; the test at argument " + testArgPosition + " wasn't a test.");
 		}else{
-			doh.debug("\tillegal arguments provided to dojo.register");
+			doh.debug("\tillegal arguments provided to doh.register");
 		}
 		doh.debug(hint);
 	};
@@ -462,9 +461,9 @@ doh._registerTest = function(group, test, type){
 
 	// create the test fixture
 	var tObj;
-	if(dojo.isFunction(test) || dojo.isString(test) || "runTest" in test){
+	if(lang.isFunction(test) || lang.isString(test) || "runTest" in test){
 		return createFixture(group, test, type) ? groupObj : 0;
-	}else if(dojo.isArray(test)){
+	}else if(lang.isArray(test)){
 		// a vector of tests...
 		for(var i=0; i<test.length; i++){
 			tObj = createFixture(group, test[i], type);
@@ -479,7 +478,7 @@ doh._registerTest = function(group, test, type){
 		// a hash of tests...
 		for(var testName in test){
 			var theTest = test[testName];
-			if(dojo.isFunction(theTest) || dojo.isString(theTest)){
+			if(lang.isFunction(theTest) || lang.isString(theTest)){
 				tObj = createFixture(group, {name: testName, runTest: theTest}, type);
 			}else{
 				// should be an object
@@ -816,8 +815,8 @@ doh.register = function(a1, a2, a3, a4, a5){
 
 doh.registerDocTests = function(module){
 	// summary:
-	//		Get all the doctests from the given module and register each of them
-	//		as a single test case here.
+	//		Deprecated.    Won't work unless you manually load dojox.testing.DocTest, and likely not even then.
+	//		Gets all the doctests from the given module and register each of them as a single test case here.
 
 	var docTest = new dojox.testing.DocTest();
 	var docTests = docTest.getTests(module);
@@ -891,7 +890,7 @@ doh.t = doh.assertTrue = function(/*Object*/ condition, /*String?*/ hint){
 	if(arguments.length < 1){
 		throw new doh._AssertFailure("assertTrue failed because it was not passed at least 1 argument");
 	}
-	//if(dojo.isString(condition) && condition.length){
+	//if(lang.isString(condition) && condition.length){
 	//	return true;
 	//}
 	if(!eval(condition)){
@@ -947,7 +946,7 @@ doh.is = doh.assertEqual = function(/*Object*/ expected, /*Object*/ actual, /*St
 
 		return true;
 	}
-	if( (this.isArray(expected) && this.isArray(actual))&&
+	if( (lang.isArray(expected) && lang.isArray(actual))&&
 		(this._arrayEq(expected, actual)) ){
 		return true;
 	}
@@ -977,7 +976,7 @@ doh.isNot = doh.assertNotEqual = function(/*Object*/ notExpected, /*Object*/ act
 	if((notExpected === actual)||(notExpected == actual)){
 				throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
 	}
-	if( (this.isArray(notExpected) && this.isArray(actual))&&
+	if( (lang.isArray(notExpected) && lang.isArray(actual))&&
 		(this._arrayEq(notExpected, actual)) ){
 		throw new doh._AssertFailure("assertNotEqual() failed: not expected |"+notExpected+"| but got |"+actual+"|", hint);
 	}
@@ -1021,12 +1020,15 @@ doh._objPropEq = function(expected, actual){
 	var x;
 	// Make sure ALL THE SAME properties are in both objects!
 	for(x in actual){ // Lets check "actual" here, expected is checked below.
-		if(expected[x] === undefined){
+		if(!(x in expected)){
 			return false;
 		}
 	}
 
 	for(x in expected){
+		if(!(x in actual)){
+			return false;
+		}
 		if(!doh.assertEqual(expected[x], actual[x], 0, true)){
 			return false;
 		}
@@ -1268,7 +1270,7 @@ doh._calcTrialIterations =	function(/*String*/ groupName, /*Object*/ fixture){
 	//		The test fixture we want to calculate iterations for.
 	var def = new doh.Deferred();
 	var calibrate = function () {
-		var testFunc = doh.hitch(fixture, fixture.runTest);
+		var testFunc = lang.hitch(fixture, fixture.runTest);
 
 		// Set the initial state.	We have to do this as a loop instead
 		// of a recursive function.	Otherwise, it blows the call stack
@@ -1478,7 +1480,7 @@ doh._runFixture = function(groupName, fixture){
 	}
 
 	var d = new doh.Deferred();
-	setTimeout(this.hitch(this, function(){
+	setTimeout(lang.hitch(this, function(){
 		if(threw){
 			this._handleFailure(groupName, fixture, err);
 		}
@@ -1487,7 +1489,7 @@ doh._runFixture = function(groupName, fixture){
 		if((!tg.inFlight)&&(tg.iterated)){
 			doh._groupFinished(groupName, !tg.failures);
 		}else if(tg.inFlight > 0){
-			setTimeout(this.hitch(this, function(){
+			setTimeout(lang.hitch(this, function(){
 				doh.runGroup(groupName);
 			}), 100);
 			this._paused = true;
@@ -1516,7 +1518,7 @@ doh.runGroup = function(/*String*/ groupName, /*Integer*/ idx){
 	idx = idx || 0;
 	var tg = this._groups[groupName];
 	if(tg.skip === true){ return; }
-	if(this.isArray(tg)){
+	if(lang.isArray(tg)){
 		if(tg.iterated===undefined){
 			tg.iterated = false;
 			tg.inFlight = 0;
@@ -1614,7 +1616,9 @@ doh.run = function(){
 };
 
 doh.runOnLoad = function(){
-	dojo.ready(doh, "run");
+	require(["dojo/ready"], function(ready){
+		ready(doh, "run");
+	});
 };
 
 return doh;

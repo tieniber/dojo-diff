@@ -22,18 +22,22 @@
 
 				// refs to parts of s1 Select
 				var s1, s1menu, Tenessee, Virginia, Washington,	// s1 select
-					s8a, s8a_menu, s8b, s8b_menu, s3, s3_menu;				// long list selects
+					s2, s2menu, s8a, s8a_menu, s8b, s8b_menu, s3, s3_menu;				// long list selects
 
 				// log of calls to onChange handler
 				var changes = [];
 
+				var focus;		// dijit/focus
+
 				doh.register("setup",
 					function setUp(){
-				    	s1 = dijit.byId('s1');
+						s1 = dijit.byId('s1');
 						s1_menu = dijit.byId('s1_menu');
 						doh.t(s1, "s1 select exists");
 						doh.t(s1_menu, "s1 menu exists");
 						
+						s2 = dijit.byId('s2');
+						s2_menu = dijit.byId('s2_menu');
 						s8a = dijit.byId('s8a');
 						s8a_menu = dijit.byId('s8a_menu');
 						s8b = dijit.byId('s8b');
@@ -54,6 +58,9 @@
 						dijit.byId('s6').loadDropDown(doNothing);
 						s8a.loadDropDown(doNothing);
 						s8b.loadDropDown(doNothing);
+
+						// modules in test page
+						focus = dojo.global.require("dijit/focus");
 				    }
 				);
 
@@ -72,7 +79,7 @@
 								doh.is("true", s1.domNode.getAttribute('aria-expanded'), 'aria-expanded');
 								doh.is("listbox", s1_menu.domNode.getAttribute('role'), 'menu role');
 								doh.is(5, dojo.query("tr", s1_menu.domNode).length, "5 options in menu");
-								
+
 								var selectedOptions = dojo.query(".dijitSelectSelectedOption .dijitMenuItemLabel", s1_menu.domNode);
 								doh.is(1, selectedOptions.length, "one selected option");
 								doh.is("Virginia", innerText(selectedOptions[0]), "Virginia highlighted");
@@ -90,7 +97,7 @@
 							doh.robot.sequence(d.getTestErrback(function(){
 								doh.t(isHidden(s1_menu), "clicking choice hides menu");
 								doh.is("false", s1.domNode.getAttribute('aria-expanded'), 'aria-expanded');
-								
+
 								doh.is("Washington", innerText(s1.containerNode), "select shows selected option");
 								doh.is("WA", s1.get("value"), "get(value) after selecting Washington");
 							}), 1000);
@@ -100,7 +107,7 @@
 							doh.robot.mouseClick({left:true}, 500);
 							doh.robot.sequence(d.getTestErrback(function(){
 								doh.t(isVisible(s1_menu), "drop down menu displayed after third click");
-								
+
 								var selectedOptions = dojo.query(".dijitSelectSelectedOption .dijitMenuItemLabel", s1_menu.domNode);
 								doh.is(1, selectedOptions.length, "one selected option");
 								doh.is("Washington", innerText(selectedOptions[0]), "Washington highlighted");
@@ -132,7 +139,7 @@
 							doh.robot.sequence(d.getTestErrback(function(){
 								doh.t(isVisible(s1_menu), "drop down menu displayed after mouse down");
 								doh.is(5, dojo.query("tr", s1_menu.domNode).length, "5 options in menu");
-								
+
 								var selectedOptions = dojo.query(".dijitSelectSelectedOption .dijitMenuItemLabel", s1_menu.domNode);
 								doh.is(1, selectedOptions.length, "one selected option");
 								doh.is("Virginia", innerText(selectedOptions[0]), "Virginia highlighted");
@@ -149,7 +156,7 @@
 							doh.robot.mouseRelease({left:true}, 500);
 							doh.robot.sequence(d.getTestErrback(function(){
 								doh.t(isHidden(s1_menu), "clicking choice hides menu");
-								
+
 								doh.is("Washington", innerText(s1.containerNode), "select shows selected option");
 								doh.is("WA", s1.get("value"), "get(value) after selecting Washington");
 							}), 1000);
@@ -159,7 +166,7 @@
 							doh.robot.mousePress({left:true}, 500);
 							doh.robot.sequence(d.getTestErrback(function(){
 								doh.t(isVisible(s1_menu), "drop down menu displayed after second mouse down");
-								
+
 								var selectedOptions = dojo.query(".dijitSelectSelectedOption .dijitMenuItemLabel", s1_menu.domNode);
 								doh.is(1, selectedOptions.length, "one selected option");
 								doh.is("Washington", innerText(selectedOptions[0]), "Washington highlighted");
@@ -192,8 +199,8 @@
 							doh.robot.mouseClick({left:true}, 500);
 							doh.robot.sequence(d.getTestErrback(function(){
 								doh.t(isVisible(s8a_menu.domNode), "drop down menu displayed after mouse down");
-								
-								var pos = dojo.position(s8a_menu.domNode);
+
+								var pos = dojo.position(s8a_menu.domNode.parentNode);	// scrollbar on wrapper
 								doh.t(pos.h >= 200, "height at least 200: " + pos.h);
 								doh.t(pos.h < 220, "height including borders not much more than 200: " + pos.h);
 							}), 1000);
@@ -210,7 +217,7 @@
 					},
 
 					// Not sure if this is good or not, but sometimes menu can overlap
-					// the select itself.  In this case, mouse up should leave the menu open						
+					// the select itself.  In this case, mouse up should leave the menu open
 					{
 						name: "menu overlaps select",
 						timeout: 6000,
@@ -262,6 +269,9 @@
 							doh.robot.keyPress(dojo.keys.TAB, 500, {});
 							doh.robot.sequence(d.getTestErrback(function(){
 								doh.is("s1", dojo.global.dijit.focus.curNode.id)
+
+								// Make sure _KeyNavMixin superclass didn't set tabIndex to -1.
+								doh.is("0", dijit.byId("s1").domNode.tabIndex, "tabIndex")
 							}), 1000);
 
 							// tab to button after s1
@@ -332,7 +342,7 @@
 					},
 					{
 						name: "ESC to close menu",
-						timeout: 90000,
+						timeout: 9000,
 						setUp: function(){
 							dojo.byId("htmlSelect2").focus();
 						},
@@ -370,6 +380,236 @@
 						},
 						tearDown: function(){
 							dijit.byId("s1").set("value", "VA");
+						}
+					},
+					{
+						name: "single letter search after failed multiple letter search, no dropdown",
+						timeout: 9000,
+						setUp: function(){
+							s2.set("value", "CA");
+							s2.focus();
+						},
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							// c search fails to find CA due to multi-character searching
+							doh.robot.typeKeys("aaaaaaac", 1000, 1200);
+
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.is("AZ", s2.get("value"), "hidden value");
+								doh.f(isVisible(s2_menu), "no menu");
+							}), 1000);
+
+							return d;
+						}
+					},
+					{
+						name: "multiple letter search after failed multiple letter search, no dropdown",
+						timeout: 9000,
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							// ala suffix fails to find either alabama or alaska due to multi-character searching
+							doh.robot.typeKeys("aaaaaaaaala", 1000, 1400);
+
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.is("AR", s2.get("value"), "hidden value");
+								doh.f(isVisible(s2_menu), "no menu");
+							}), 1000);
+
+							return d;
+						}
+					},
+					{
+						name: "multiple letter searching from current, no dropdown",
+						timeout: 9000,
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							// search for Alabama
+							doh.robot.typeKeys("al", 1000, 1600); // al search finds alabama
+
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.is("AL", s2.get("value"), "hidden value");
+								doh.f(isVisible(s2_menu), "no menu");
+							}), 1000);
+
+							return d;
+						}
+					},
+					{
+						name: "multiple letter searching find next, no dropdown",
+						timeout: 9000,
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							doh.robot.typeKeys("alas", 1000, 1600); // s search finds alaska
+
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.is("AK", s2.get("value"), "hidden value");
+								doh.f(isVisible(s2_menu), "no menu");
+							}), 1000);
+
+							return d;
+						}
+					},
+					{
+						name: "single letter searching, no dropdown",
+						timeout: 9000,
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							// c search finds CA
+							doh.robot.typeKeys("c", 500, 500);
+
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.is("CA", s2.get("value"), "hidden value");
+								doh.f(isVisible(s2_menu), "no menu");
+							}), 1000);
+
+							return d;
+						}
+					},
+					{
+						name: "multi letter searching with SPACE, no dropdown",
+						timeout: 9000,
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							// c search fails to find CA due to multi-character searching
+							doh.robot.typeKeys("new m", 500, 1200);
+
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.is("NM", s2.get("value"), "hidden value");
+								doh.f(isVisible(s2_menu), "no menu");
+							}), 1000);
+
+							return d;
+						}
+					},
+					{
+						name: "single letter searching from dropdown",
+						timeout: 9000,
+						setUp: function(){
+							s2.set("value", "CA");
+						},
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							// down arrow to open drop down and search with several a's
+							doh.robot.keyPress(dojo.keys.DOWN_ARROW, 500, {});
+							doh.robot.typeKeys("aaaaaaac", 1000, 1200); // c search fails to find CA due to multi-character searching
+
+							// SPACE to close menu
+							doh.robot.keyPress(dojo.keys.SPACE, 1100, {}); // long delay so that multi-letter searching is deactivated
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.is("AZ", s2.get("value"), "hidden value");
+							}), 1000);
+
+							return d;
+						}
+					},
+					{
+						name: "multiple letter searching no match from dropdown",
+						timeout: 9000,
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							// ENTER to open drop down and search with several a's
+							doh.robot.keyPress(dojo.keys.ENTER, 500, {});
+							doh.robot.typeKeys("aaaaaaaaala", 1000, 1400); // ala suffix fails to find either alabama or alaska
+
+							// ENTER to close menu
+							doh.robot.keyPress(dojo.keys.ENTER, 500, {});
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.is("AR", s2.get("value"), "hidden value");
+							}), 1000);
+
+							return d;
+						}
+					},
+					{
+						name: "multiple letter searching from current from dropdown",
+						timeout: 9000,
+						runTest: function(){
+							var d = new doh.Deferred();
+							var wasVisible;
+
+							// SPACE to open drop down and search with several a's
+							doh.robot.keyPress(dojo.keys.SPACE, 500, {});
+							doh.robot.typeKeys("al", 1000, 1600); // al search finds alabama
+							doh.robot.sequence(function(){
+								wasVisible = isVisible(s2_menu);
+							}, 1000);
+
+							// SPACE to close menu
+							doh.robot.keyPress(dojo.keys.SPACE, 1100, {}); // long delay so that multi-letter searching is deactivated
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.t(wasVisible, "no auto selection");
+								doh.is("AL", s2.get("value"), "hidden value");
+							}), 1000);
+
+							return d;
+						}
+					},
+					{
+						name: "multiple letter searching find next from dropdown",
+						timeout: 9000,
+						runTest: function(){
+							var d = new doh.Deferred();
+							var wasVisible;
+
+							// down arrow to open drop down and search with several a's
+							doh.robot.keyPress(dojo.keys.DOWN_ARROW, 500, {});
+							doh.robot.typeKeys("alas", 1000, 1600); // s search finds alaska
+							doh.robot.sequence(function(){
+								wasVisible = isVisible(s2_menu);
+							}, 1000);
+
+							// ENTER to close menu
+							doh.robot.keyPress(dojo.keys.ENTER, 500, {});
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.t(wasVisible, "no auto selection");
+								doh.is("AK", s2.get("value"), "hidden value");
+							}), 1000);
+
+							return d;
+						}
+					},
+					{
+						name: "toolbar",
+						timeout: 10000,
+						setUp: function(){
+							dojo.byId("beforeToolbar").focus();
+						},
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							// tab into toolbar, then arrow to select
+							doh.robot.keyPress(dojo.keys.TAB, 500, {});
+							doh.robot.keyPress(dojo.keys.RIGHT_ARROW, 500, {});
+
+							// select Alabama
+							doh.robot.keyPress(dojo.keys.DOWN_ARROW, 500, {});
+							doh.robot.keyPress(dojo.keys.DOWN_ARROW, 500, {});
+							doh.robot.keyPress(dojo.keys.ENTER, 500, {});
+
+							// go to right toggle button and click it
+							doh.robot.keyPress(dojo.keys.RIGHT_ARROW, 500, {});
+							doh.robot.keyPress(dojo.keys.SPACE, 500, {});
+
+							// go to left toggle button and click it
+							doh.robot.keyPress(dojo.keys.LEFT_ARROW, 500, {});
+							doh.robot.keyPress(dojo.keys.LEFT_ARROW, 500, {});
+							doh.robot.keyPress(dojo.keys.SPACE, 500, {});
+
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.is("AL", dijit.byId("toolbarSelect").get("value"), "select value");
+								doh.t(dijit.byId("toggle1").get("checked"), "first toggle button");
+								doh.t(dijit.byId("toggle2").get("checked"), "second toggle button");
+							}), 1000);
+
+							return d;
 						}
 					}
 				]);
@@ -430,7 +670,7 @@
 								var s5newSize = dojo.position(s5.domNode);
 								doh.t(s5newSize.w > s5origSize.w, "select changed width from " + s5origSize.w + " to " + s5newSize.w);
 							}), 500);
-				
+
 							return d;
 						}
 					}
@@ -463,7 +703,7 @@
 								doh.t(!s3.options[0].value, "blank option");
 								doh.f(s3.isValid(), "should not be valid");
 							}), 1000);
-				
+
 							return d;
 						}
 					},
@@ -487,7 +727,7 @@
 								doh.f(!s3.options[0].value, "no blank option");
 								doh.t(s3.isValid(), "should be valid");
 							}), 1000);
-				
+
 							return d;
 						}
 					},
@@ -510,7 +750,7 @@
 								doh.is("AR", s3.get('value'), "Arkansas");
 								doh.t(s3.isValid(), "should be valid");
 							}), 1000);
-				
+
 							return d;
 						}
 					}
@@ -593,6 +833,73 @@
 							doh.robot.mouseMoveAt("submit", 0, 1);
 							doh.robot.mouseClick({left:true}, 500);
 
+							return d;
+						}
+					}
+				]);
+
+				doh.register("validation in dialog", [
+					{
+						name: "show and validate dialog",
+						timeout: 5000,
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							// Show dialog
+							doh.robot.mouseMoveAt("dlg1OpenBtn", 0, 1);
+							doh.robot.mouseClick({left: true}, 500);
+
+							// Clicking validate button should show "required but empty" tooltip on the Select
+							doh.robot.mouseMoveAt("dlg1ValidateBtn", 0, 1);
+							doh.robot.mouseClick({left: true}, 500);
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.is("dlg1Select", focus.curNode && focus.curNode.id, "focused on select");
+								var masterTT = dijit.Tooltip._masterTT;
+								doh.t(masterTT && isVisible(masterTT.domNode), "tooltip shown");
+							}), 750);
+							return d;
+						}
+					},
+					{
+						name: "hide dialog",
+						timeout: 5000,
+						runTest: function(){
+							// Hiding the dialog should make the validation tooltip disappear
+							var d = new doh.Deferred();
+
+							doh.is("dlg1Select", focus.curNode && focus.curNode.id, "focused on select");
+
+							// Close dialog via ESCAPE key because on FF, robot when run from runTests.html has
+							// problems positioning mouse over the close icon.  It strangely positions a few
+							// hundred pixels above the close icon, perhaps due to the iframes and scrolling.
+							doh.robot.keyPress(dojo.keys.ESCAPE, 500, {});
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.t(isHidden(dojo.byId("dlg1")), "dialog hidden");
+								var masterTT = dijit.Tooltip._masterTT;
+								doh.t(isHidden(masterTT.domNode), "tooltip hidden");
+							}), 750);
+							return d;
+						}
+					},
+					{
+						name: "show again",
+						timeout: 5000,
+						runTest: function(){
+							var d = new doh.Deferred();
+
+							// Show dialog again.   Presumably focus is already on the open button, so can
+							// keyboard trigger it.
+							doh.robot.keyPress(dojo.keys.SPACE, 500, {});
+
+							// Opening the dialog focuses the select, which is invalid since it's got no value.
+							// Since this is the second time it's being focused, it should popup the tooltip
+							// immediately.
+							doh.robot.sequence(d.getTestCallback(function(){
+								doh.t(isVisible(dojo.byId("dlg1")), "dialog shown again");
+								doh.is("dlg1Select", focus.curNode.id, "focused on select");
+								var masterTT = dijit.Tooltip._masterTT;
+								doh.t(masterTT && isVisible(masterTT.domNode), "tooltip shown");
+							}), 750);
 							return d;
 						}
 					}

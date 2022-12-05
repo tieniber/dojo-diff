@@ -1,4 +1,12 @@
-define(["doh/runner"], function(doh) {
+define(["doh/runner", "require", "dojo/_base/config"], function(doh, require, config){
+	/*=====
+	 return {
+	 // summary:
+	 //		Module for running DOH tests in rhino (as opposed to a browser).
+	 //		Augments return value from doh/runner.
+	 };
+	 =====*/
+
 	doh.debug= print;
 	doh.error= print;
 
@@ -13,9 +21,9 @@ define(["doh/runner"], function(doh) {
 	};
 
 	print("\n"+doh._line);
-	print("The Dojo Unit Test Harness, $Rev: 18f9dc6 $");
-	print("Copyright (c) 2011, The Dojo Foundation, All Rights Reserved");
-	for (var tests= [], args= doh.config["commandLineArgs"], i= 0, arg; i<args.length; i++) {
+	print("The Dojo Unit Test Harness, $Rev: ede4131 $");
+	print("Copyright (c) 2018, The JS Foundation, All Rights Reserved");
+	for (var tests= [], args= config["commandLineArgs"], i= 0, arg; i<args.length; i++) {
 		arg= (args[i]+"").split("=");
 		if (arg.length==2 && arg[0]=="test") {
 			var test= arg[1];

@@ -53,6 +53,7 @@ define([], function(){
 		[1, 225, "missingDirDuringDiscovery", "A directory that was scheduled to be read during discovery did not exist."],
 		[1, 226, "missingProfile", "A package without a profile could throw errors or warnings."],
 		[1, 227, "symbolsLeak", "Inserting symbols (by setting the profile variable 'symbol') causes leaks in IE."],
+		[1, 228, "cssOptimizeIgnoredNoResource", "While optimizing a CSS file, an import directive was not expanded because the source for the import was not available to the builder."],
 
 		// error 300-399
 		[1, 300, "dojoHasMissingPlugin", "Missing dojo/has module."],
@@ -98,7 +99,7 @@ define([], function(){
 		[1, 340, "inputHTMLFileDoesNotExist", "HTML file given for \"htmlFiles\" switch does not exist."],
 		[1, 341, "inputHTMLDirDoesNotExist", "HTML directory given for \"htmlDir\" switch does not exist."],
 		[1, 342, "inputHTMLDirNoFiles","HTML directory given for \"htmlDir\" switch contains no HTML files."],
-		[1, 343, "inputIllegalCommandlineArg", "Illegal command line argument."],
+		[1, 343, "inputIllegalCommandlineArg", "Illegal or missing argument for command line flag."],
 		[1, 344, "inputFileDoesNotExist", "File does not exist."],
 		[1, 345, "inputProcessingHtmlFileNotImplemented", "Pulling profiles from HTML files is not implemented."],
 		[1, 346, "inputFailedReadfile", "Failed to read input file."],
@@ -115,7 +116,6 @@ define([], function(){
 		[1, 356, "optimizeFailed", "The optimizer threw an exception; the module probably contains syntax errors."],
 		[1, 357, "cssOptimizeUnableToResolveURL", "While optimizing a CSS file, it was impossible to compute the destination location of a relative URL."],
 		[1, 358, "cssOptimizeImproperComment", "While optimizing a CSS file, an improper comment was encountered."],
-		[1, 359, "cssOptimizeIgnoredNoResource", "While optimizing a CSS file, an import directive was not expanded because the source for the import was not available to the builder."],
 
 		// reports 400-499
 		[1, 400, "hasReport", "Has Features Detected"],
@@ -236,8 +236,10 @@ define([], function(){
 		optimizerOutput= "",
 
 		logOptimizerOutput = function(text){
-			if(/\sERROR\s/.test(text)){
+			if(/\sERROR\s-\s\[[^\]]+]\s/.test(text)){
 				// the google closure error format
+				// i.e., " ERROR - [JSC_JSDOC_ON_RETURN] "
+				// see https://github.com/google/closure-compiler/blob/35beaa864997442d635875add4d60b7b73be6294/src/com/google/javascript/jscomp/LightweightMessageFormatter.java#L113-L116
 				logOptimizerReportedErrors();
 			}
 			optimizerOutput+= text;

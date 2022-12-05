@@ -661,6 +661,31 @@
 
 			// TODO: click test for arrowless
 
+			!isComboBox && doh.register("reverse lookup query options", [
+				{
+					timeout: 60000,
+					name: "delaware",
+					runTest: function(){
+						var d = new doh.Deferred();
+						var combo = dijit.byId("arrowless");
+
+						combo.set("value", null);
+						combo.focusNode.focus();
+
+						doh.robot.typeKeys("delaware", 500, 100);
+						doh.robot.keyPress(dojo.keys.TAB, 1000);
+
+						doh.robot.sequence(d.getTestCallback(function(){
+							// Value should have been converted to "Delaware" (in upper case) and marked as valid
+							doh.is("Delaware", combo.focusNode.value);
+							doh.is("", combo.state, "marked as valid");
+						}), 1000);
+
+						return d;
+					}
+				}
+			]);
+
 			// Race condition tests based on slow store:
 			// Test that drop down choices are filtered to values matching what user has typed
 			doh.register("race conditions", [
@@ -1572,6 +1597,27 @@
 					combo: "subclass",
 					runTest: function(){
 						return robot_a11ySelectValue(dijit.byId(this.combo), "Delaware", isComboBox ? "Delaware" : "DE", "Delaware");
+					}
+				}
+			]);
+
+			doh.register("aria-autocomplete (#9089)", [
+				{
+					timeout: 1000,
+					name:"aria-autocomplete with autoComplete enabled",
+					combo: "autocompleteon",
+					runTest: function(){
+						var combo = dijit.byId(this.combo);
+						doh.is("both", combo.focusNode.getAttribute("aria-autocomplete"), "aria-autocomplete on combo is 'both'");
+					}
+				},
+				{
+					timeout: 1000,
+					name:"aria-autocomplete with autoComplete disabled",
+					combo: "autocompleteoff",
+					runTest: function(){
+						var combo = dijit.byId(this.combo);
+						doh.is("list", combo.focusNode.getAttribute("aria-autocomplete"), "aria-autocomplete on combo is 'list'");
 					}
 				}
 			]);

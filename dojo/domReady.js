@@ -1,6 +1,5 @@
-define(['./has'], function(has){
-	var global = (function () { return this; })(),
-		doc = document,
+define(['./global', './has'], function(global, has){
+	var doc = document,
 		readyStates = { 'loaded': 1, 'complete': 1 },
 		fixReadyState = typeof doc.readyState != "string",
 		ready = !!readyStates[doc.readyState],
@@ -39,7 +38,7 @@ define(['./has'], function(has){
 			try{
 				(readyQ.shift())(doc);
 			}catch(err){
-				console.log("Error on domReady callback: " + err);
+				console.error(err, "in domReady callback", err.stack);
 			}
 		}
 

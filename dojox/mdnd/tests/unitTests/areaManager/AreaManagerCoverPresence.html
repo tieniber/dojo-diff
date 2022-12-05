@@ -35,7 +35,7 @@
 			}
 	
 	</style>
-	<script type="text/javascript" src="../../../../../dojo/dojo.js" djConfig="isDebug: true, parseOnLoad: true"></script>
+	<script type="text/javascript" src="../../../../../dojo/dojo.js" data-dojo-config="isDebug: true, parseOnLoad: true"></script>
 	
 	
 	<script type="text/javascript">
@@ -52,7 +52,7 @@
 		
 		dojo.addOnLoad(function(){
 			// initialize the singleton areaManager
-			var mgr = dojox.mdnd.areaManager();
+			var mgr = dojox.mdnd.AreaManager.areaManager();
 			mgr.init();
 			
 			var area1,area2,area3;

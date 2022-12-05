@@ -10,7 +10,7 @@
 
 		<!-- required: dojo.js -->
 		<script type="text/javascript" src="../../../dojo/dojo.js"
-			djConfig="isDebug: true"></script>
+			data-dojo-config="isDebug: true"></script>
 
 		<script type="text/javascript">
 			require([
@@ -72,7 +72,7 @@
 						runTest: function(){
 							var d = new doh.Deferred();
 							var button = registry.byId("tooltipDlgButton");
-							
+
 							// open TooltipDialog
 							robot.sequence(function(){
 								button.focus();
@@ -110,7 +110,7 @@
 
 							var button = registry.byId("tooltipDlgButton"),
 								select = registry.byId("combo");
-							
+
 							// open TooltipDialog, advance to FilteringSelect
 							robot.sequence(function(){
 								button.focus();
@@ -159,7 +159,7 @@
 							var button = registry.byId("tooltipDlgButton"),
 								inlineEditBox = registry.byId("inline"),
 								initialValue = inlineEditBox.get("value");
-							
+
 							// open TooltipDialog
 							robot.sequence(function(){
 								button.focus();
@@ -209,7 +209,7 @@
 
 							var button = registry.byId("tooltipDlgButton"),
 								inlineEditBox = registry.byId("inline");
-							
+
 							// open TooltipDialog
 							robot.sequence(function(){
 								button.focus();
@@ -259,7 +259,7 @@
 
 							var button = registry.byId("tooltipDlgButton"),
 								inlineEditBox = registry.byId("inline");
-							
+
 							// open TooltipDialog
 							robot.sequence(function(){
 								button.focus();
@@ -320,7 +320,7 @@
 
 							// start editing
 							robot.keyPress(keys.SPACE, 500, {});
-	
+
 							// abort editing, then re-enter edit mode
 							robot.keyPress(keys.ESCAPE, 1000, {});
 							robot.keyPress(keys.ENTER, 1000, {});
@@ -353,7 +353,7 @@
 							// start editing
 							robot.keyPress(keys.SPACE, 500, {});
 							robot.typeKeys("enter #2", 1000, 1000);
-							
+
 							// save via ENTER key, the press ENTER again to re-edit
 							robot.keyPress(keys.ENTER, 200, {});
 							robot.keyPress(keys.ENTER, 1000, {});

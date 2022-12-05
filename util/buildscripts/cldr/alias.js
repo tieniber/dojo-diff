@@ -23,7 +23,7 @@ var logDir = arguments[1];
 var logStr = "";
 
 //Add new bundles to the list so that they will be aliased according to the ldml spec.
-var BUNDLES = ['gregorian','hebrew','islamic','islamic-civil','buddhist'];
+var BUNDLES = ['gregorian','hebrew','islamic','islamic-civil','buddhist','persian'];
 
 var LOCALE_ALIAS_MARK = '@localeAlias';
 var LOCALE_ALIAS_SOURCE_PROPERTY = 'source';
@@ -94,6 +94,10 @@ function _calculateAliasPath(bundle, name/*String*/){
 				mapping[LOCALE_ALIAS_SOURCE_PROPERTY] = src;
 				mapping[LOCALE_ALIAS_TARGET_PROPERTY] = bundle[localeAliasSource + LOCALE_ALIAS_MARK + i][LOCALE_ALIAS_TARGET_PROPERTY];
 				mapping[LOCALE_ALIAS_TARGET_BUNDLE] = bundle[localeAliasSource + LOCALE_ALIAS_MARK + i][LOCALE_ALIAS_TARGET_BUNDLE];
+				if (!mapping[LOCALE_ALIAS_TARGET_BUNDLE]) {
+					// TODO: Fix calendar.xsl to handle the new aliases in root.xml
+					continue;
+				}
 				//whether aliased to the bundle itself
 				mapping.inSelf = mapping[LOCALE_ALIAS_TARGET_BUNDLE] === name;
 				path.push(mapping);
